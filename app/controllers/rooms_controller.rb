@@ -1,48 +1,38 @@
 class RoomsController < ApplicationController
   before_action :set_room, only: %i[show result status]
   before_action :set_words, only: %i[show result]
+  protect_from_forgery except: :join
 
   # ソロモードルーム作成
   def solo
     @room = Room.create!(
-      name: "ソロモード",
+      name: 'ソロモード',
       status: :playing,
       max_players: 1,
       creator_id: current_user&.id,
-      game_mode: "score_attack" # game_modeをscore_attackに設定
+      game_mode: 'score_attack',
+      started_at: Time.current + 4.seconds
     )
-
-    # プレイヤー情報を作成（ログインユーザーまたはゲスト）
     participant = if guest_user?
-      @room.room_participants.create!(
-        guest_id: current_guest_id,
-        guest_name: current_guest_name
-      )
-    else
-      @room.room_participants.create!(user: current_user)
-    end
-
-
-    # 初期単語「しりとり」を追加
+                    @room.room_participants.create!(
+                      guest_id: current_guest_id,
+                      guest_name: current_guest_name
+                    )
+                  else
+                    @room.room_participants.create!(user: current_user)
+                  end
     @room.words.create!(
       body: 'しりとり',
       score: 0,
       room_participant: participant,
       user: participant.user
     )
-
     redirect_to room_path(@room), notice: 'ソロモードを開始しました'
-  end
-
-  def new
-    @room = Room.new
   end
 
   def index
     @rooms = Room.available.order(created_at: :desc)
-    # ソロゲーム部屋（max_players = 1）の全参加者について、1ゲーム（1部屋）で獲得した点数の最高得点ランキング
     solo_rooms = Room.where(max_players: 1)
-    # 各ユーザーごとに、各ソロ部屋での合計スコア（score+ai_score+chain_bonus_score）を計算し、その中の最大値をランキング化
     user_max_scores = {}
     solo_rooms.includes(:room_participants).find_each do |room|
       room.room_participants.each do |participant|
@@ -50,6 +40,7 @@ class RoomsController < ApplicationController
         total_score = words.sum(:score).to_i + words.sum(:ai_score).to_i + words.sum(:chain_bonus_score).to_i
         user = participant.user
         next unless user
+
         if user_max_scores[user.id].nil? || user_max_scores[user.id][:score] < total_score
           user_max_scores[user.id] = { username: user.username, score: total_score }
         end
@@ -58,10 +49,40 @@ class RoomsController < ApplicationController
     @ranking = user_max_scores.values.sort_by { |h| -h[:score] }.first(5)
   end
 
+  def show
+    is_participant = if guest_user?
+                       @room.room_participants.exists?(guest_id: current_guest_id)
+                     else
+                       @room.room_participants.exists?(user_id: current_user.id)
+                     end
+
+    unless is_participant
+      redirect_to rooms_path, alert: 'このルームの参加者ではありません。' and return
+    end
+
+    if @room.finished?
+      redirect_to result_room_path(@room) and return
+    end
+
+    if @room.playing?
+      render :show
+    else
+      render :waiting
+    end
+  end
+
+  def new
+    @room = Room.new
+  end
+
   # ルーム作成 → ホストは待機画面へ
   def create
     room = Room.create!(creator_id: current_user.id, status: :waiting, max_players: 2)
-    room.room_participants.create!(user: current_user) # ホストも参加者に含める
+    room.room_participants.create!(user: current_user)
+
+    html = render_to_string(partial: 'rooms/room', locals: { room: room })
+    ActionCable.server.broadcast('lobby_channel', { event: 'room_created', room_html: html })
+
     redirect_to room_path(room), notice: 'ルームを作成しました。相手を待っています…'
   end
 
@@ -85,12 +106,25 @@ class RoomsController < ApplicationController
 
       room.room_participants.create!(user: current_user)
 
-      if room.full?
-        room.update!(status: :playing) if room.respond_to?(:status)
+      participants_html = render_to_string(
+        partial: 'rooms/participant',
+        collection: room.participants
+      )
 
-        # 各参加者に「しりとり」の初期単語を生成
-        room.room_participants.includes(:user).each do |participant|
-          unless room.words.where(user: participant.user).exists?
+      RoomChannel.broadcast_to(room, {
+                                 event: 'participant_joined',
+                                 participants_html: participants_html,
+                                 participant_count: room.room_participants.count,
+                               })
+
+      if room.full?
+        room.update!(status: :playing, started_at: Time.current + 4.seconds) if room.respond_to?(:status)
+
+        ActionCable.server.broadcast('lobby_channel', { event: 'room_removed', room_id: room.id })
+        RoomChannel.broadcast_to(room, { event: 'game_started' })
+
+        room.room_participants.includes(:user).find_each do |participant|
+          unless room.words.exists?(user: participant.user)
             room.words.create!(body: 'しりとり', score: 0, user: participant.user, room_participant: participant)
           end
         end
@@ -100,145 +134,76 @@ class RoomsController < ApplicationController
     redirect_to room_path(room)
   end
 
-  def show
-    @room = Room.find(params[:id])
-
-    # 参加確認（ログインユーザーまたはゲストユーザー）
-    is_participant = if guest_user?
-      @room.room_participants.exists?(guest_id: current_guest_id)
-    else
-      @room.room_participants.exists?(user_id: current_user.id)
-    end
-
-    unless is_participant
-      redirect_to rooms_path, alert: 'このルームの参加者ではありません。' and return
-    end
-
-    if @room.respond_to?(:playing?) && @room.playing?
-      render :show
-    else
-      render :waiting
-    end
-  end
-
-  # ステータス確認用API（AJAX用）
   def status
     render json: {
       status: @room.status,
       participant_count: @room.room_participants.count,
-      max_players: @room.max_players
+      max_players: @room.max_players,
     }
   end
 
-  # 退出
   def leave
     room = Room.find(params[:id])
     room.room_participants.where(user_id: current_user.id).destroy_all
 
-    # 参加者が0なら部屋ごと削除（掃除）
-    if room.room_participants.count.zero?
+    if room.reload.room_participants.count.zero?
       room.destroy!
+      ActionCable.server.broadcast('lobby_channel', { event: 'room_removed', room_id: room.id })
     end
 
     redirect_to rooms_path, notice: 'ルームを退出しました。'
   end
 
-  # ⭐️ ここが新しい `result` アクションです ⭐️
   def result
-    @room = Room.find(params[:id])
-    @evaluation_timed_out = false
+    @room.update!(status: :finished) unless @room.finished?
 
-    # AI評価が完了するまで最大60秒待機
-    timeout = 60.seconds
-    start_time = Time.current
-    loop do
-      # 初期単語(score: 0)を除き、ai_scoreがまだ存在しない単語があるかチェック
-      all_words_evaluated = @room.words.where.not(score: 0).all? { |word| word.ai_score.present? }
-      break if all_words_evaluated
-
-      if Time.current - start_time > timeout
-        @evaluation_timed_out = true
-        break
+    words_to_evaluate = @room.words.where.not(score: 0)
+    if words_to_evaluate.any? { |w| w.ai_score.nil? || (w.previous_word && w.chain_bonus_score.nil?) }
+      words_to_evaluate.each do |word|
+        ShiritoriEvaluationJob.perform_later(word) if word.ai_score.nil?
+        if word.previous_word && word.chain_bonus_score.nil?
+          ShiritoriChainEvaluationJob.perform_later(word, word.previous_word)
+        end
       end
-
-      sleep 1
-      @room.words.reload # DBから最新の状態を読み込む
     end
 
-    @participants = @room.room_participants.includes(:user)
+    service = ResultBroadcasterService.new(@room)
+    results_data = service.build_results_data
 
-    results = @participants.map do |participant|
-      # 部屋内のこの参加者の全単語のみを対象
-      words = @room.words.where(room_participant_id: participant.id)
+    initial_data_for_view = if results_data[:all_words_evaluated]
+                              # 何も加工せず、そのまま最終結果を渡す
+                              results_data
+                            else
+                              # まだ評価中の場合は、サービスが提供するメソッドで初期データを取得する
+                              service.build_initial_results_data
+                            end
 
-      total_base_score = words.pluck(:score).compact.sum
-      total_ai_score = words.pluck(:ai_score).compact.sum
-      total_chain_bonus_score = words.pluck(:chain_bonus_score).compact.sum
-
-      {
-        user: participant.user,
-        result: {
-          total_score: total_base_score + total_ai_score + total_chain_bonus_score,
-          total_base_score: total_base_score,
-          total_ai_score: total_ai_score,
-          total_chain_bonus_score: total_chain_bonus_score,
-          word_count: words.count,
-          words: words.order(created_at: :asc)
-        }
-      }
-    end
-
-    # スコアで降順にソート
-    @ranked_results = results.sort_by { |r| r[:result][:total_score] }.reverse.map.with_index(1) do |result, i|
-      result.merge(rank: i, is_current_user: (result[:user] == current_user))
-    end
-
-    @winner = @ranked_results.first[:user] if @ranked_results.present?
-  end
-
-  # 全ユーザーのソロスコアランキング
-  def solo_ranking
-    @ranking = User.joins(:words)
-      .select('users.*, SUM(words.score) AS total_score')
-      .group('users.id')
-      .order('total_score DESC')
-  end
-
-  # 全ユーザーのソロスコアランキング（JSON返却）
-  def solo_ranking_json
-    ranking = Word.joins(:user)
-      .group('users.id', 'users.username')
-      .select('users.id, users.username, SUM(words.score) AS total_score')
-      .order('total_score DESC')
-
-    render json: ranking.map.with_index(1) { |row, i|
-      {
-        rank: i,
-        username: row.username,
-        total_score: row.total_score
-      }
-    }
+    @initial_results_data = {
+      event: 'initial_load',
+      all_words_evaluated: initial_data_for_view[:all_words_evaluated],
+      ranked_results: initial_data_for_view[:ranked_results],
+    }.to_json
   end
 
   private
 
-    def set_room
-      @room = Room.find(params[:id])
-    end
+  def set_room
+    @room = Room.find(params[:id])
+  end
 
-    def set_words
-      return unless @room
+  def set_words
+    return unless @room
 
-      if guest_user?
-        participant = @room.room_participants.find_by(guest_id: current_guest_id)
-      else
-        participant = @room.room_participants.find_by(user_id: current_user.id)
-      end
+    @current_participant = if guest_user?
+                             @room.room_participants.find_by(guest_id: current_guest_id)
+                           else
+                             @room.room_participants.find_by(user_id: current_user.id)
+                           end
 
-      @words = @room.words.where(room_participant_id: participant&.id).order(:created_at)
-    end
+    @words = @room.words.where(room_participant_id: @current_participant&.id).order(:created_at) || []
+  end
 
-    def room_params
-      params.require(:room).permit(:name, :game_mode)
-    end
+  def room_params
+    params.require(:room).permit(:name, :game_mode)
+  end
 end

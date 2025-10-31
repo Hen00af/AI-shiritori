@@ -1,4 +1,5 @@
 <div class="container py-5">
+  
   <div class="text-center mb-5">
     <% if current_user %>
       <%= button_to "ルームを作成", rooms_path, method: :post, class: 'game-btn' %>
@@ -8,82 +9,50 @@
     <%= button_to "ソロモードで遊ぶ", solo_rooms_path, method: :post, class: 'game-btn' %>
   </div>
 
-  <h2 class="mb-3" style="color:#00ffe7;text-shadow:0 0 8px #00ffe7,0 0 2px #fff;">ソロスコアランキング</h2>
-  <style>
-    .futuristic-ranking {
-      background: #181818;
-      color: #fff;
-      border-radius: 16px;
-      box-shadow: 0 4px 24px #00ffe7a0, 0 1px 4px #000a;
-      overflow: hidden;
-      margin-bottom: 2rem;
-      border: none;
-      width: 100%;
-    }
-    .futuristic-ranking th {
-      background: linear-gradient(90deg,#23234a 0%,#181818 100%);
-      color: #fff;
-      font-weight: bold;
-      border: none;
-      text-shadow: 0 0 2px #00ffe7,0 0 1px #fff;
-      padding: 12px;
-    }
-    .futuristic-ranking td {
-      border: none;
-      padding: 12px;
-      font-size: 1.1em;
-      background: #222;
-      color: #fff;
-      transition: background 0.2s;
-    }
-    .futuristic-ranking tr {
-      border-bottom: 1px solid #222;
-    }
-    .futuristic-ranking tr:hover {
-      background: #23234a;
-      color: #fff;
-    }
-    .futuristic-ranking tbody tr:first-child {
-      background: linear-gradient(90deg,#00ffe7 0%,#23234a 100%);
-      color: #fff;
-      font-weight: bold;
-      text-shadow: 0 0 3px #fff,0 0 1px #00ffe7;
-    }
-  </style>
-  <table class="futuristic-ranking">
-    <thead>
-      <tr>
-        <th>順位</th>
-        <th>ユーザー名</th>
-        <th>合計スコア</th>
-      </tr>
-    </thead>
-    <tbody>
-      <% @ranking.each_with_index do |row, i| %>
-        <tr>
-          <td><%= i + 1 %></td>
-          <td><%= row[:username] %></td>
-          <td><%= row[:score] %></td>
-        </tr>
-      <% end %>
-    </tbody>
-  </table>
+  <div class="mb-5">
+    <h2 class="mb-3 text-center lobby-heading">ソロスコアランキング</h2>
+    
+    <div class="ranking-table-container">
+      <table class="futuristic-ranking">
+        <thead>
+          <tr>
+            <th>順位</th>
+            <th>ユーザー名</th>
+            <th>合計スコア</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% @ranking.each_with_index do |row, i| %>
+            <tr>
+              <td><%= i + 1 %></td>
+              <td><%= row[:username] %></td>
+              <td><%= row[:score] %></td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+  </div>
 
-  <h2 class="joinpossible-text">参加可能なルーム</h2>
+  <div>
+    <h2 class="mb-3 text-center lobby-heading">参加可能なルーム</h2>
 
-  <% if @rooms.any? %>
-    <ul class="list-group">
-      <% @rooms.each do |room| %>
-        <li class="list-group-item d-flex justify-content-between align-items-center">
-          <div>
-            ルーム #<%= room.id %>（作成者: <%= room.creator.username %>）
-            / 参加人数: <%= room.room_participants.count %> / <%= room.max_players %>
-          </div>
-          <%= button_to "参加", join_room_path(room), method: :post, class: "game-btn", data: { turbo: false } %>
-        </li>
+    <div data-controller="lobby">
+      <ul class="list-group" data-lobby-target="list">
+        <% if @rooms.any? %>
+          <% @rooms.each do |room| %>
+            <%= render 'room', room: room %>
+          <% end %>
+        <% end %>
+      </ul>
+      
+      <%# メッセージ部分にも target を設定 %>
+      <% if @rooms.empty? %>
+        <p id="no-rooms-message" class="text-center mt-3" data-lobby-target="message">参加可能なルームはありません。</p>
+      <% else %>
+        <p id="no-rooms-message" class="text-center mt-3 d-none" data-lobby-target="message">参加可能なルームはありません。</p>
       <% end %>
-    </ul>
-  <% else %>
-    <p class="joinpossible-subtext">参加可能なルームはありません。</p>
-  <% end %>
+    </div>
+  </div>
+
 </div>

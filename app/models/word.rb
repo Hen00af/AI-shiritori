@@ -8,7 +8,10 @@ class Word < ApplicationRecord
   validates :body, presence: true
   validates :score, presence: true, numericality: { greater_than_or_equal_to: 0 }
 
-  # ユーザー別の単語を取得するスコープを追加
   scope :for_user, ->(user) { where(user: user) }
   scope :ordered, -> { order(:created_at) }
+
+  def previous_word
+    room_participant.words.where('created_at < ?', created_at).order(created_at: :desc).first
+  end
 end

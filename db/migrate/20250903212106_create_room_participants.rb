@@ -5,6 +5,6 @@ class CreateRoomParticipants < ActiveRecord::Migration[7.0]
       t.references :user, null: false, foreign_key: true
       t.timestamps
     end
-    add_index :room_participants, [:room_id, :user_id], unique: true
+    add_index :room_participants, %i[room_id user_id], unique: true
   end
 end

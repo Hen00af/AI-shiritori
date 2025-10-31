@@ -1,49 +1,13 @@
-<div class="container py-5 text-center">
+<div class="container py-5 text-center" data-controller="waiting-room" data-waiting-room-room-id-value="<%= @room.id %>">
   <h2>ルーム #<%= @room.id %> 待機中...</h2>
   <p>参加人数: <span id="participant-count"><%= @room.room_participants.count %></span> / <%= @room.max_players %></p>
 
   <h5 class="mt-4">参加者</h5>
   <ul class="list-unstyled" id="participants-list">
-    <% @room.participants.each do |u| %>
-      <h5><li><%= u.username %></li></h5>
-    <% end %>
+    <%= render partial: 'rooms/participant', collection: @room.participants %>
   </ul>
 
   <div class="mt-4">
     <%= button_to "ルームを退出", leave_room_path(@room), method: :delete, class: "btn btn-outline-secondary" %>
   </div>
 </div>
-
-<script>
-// 定期的にルームの状態をチェック
-function checkRoomStatus() {
-  fetch(`/rooms/<%= @room.id %>/status`, {
-    method: 'GET',
-    headers: {
-      'Accept': 'application/json',
-      'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-    }
-  })
-  .then(response => response.json())
-  .then(data => {
-    // 参加者数を更新
-    document.getElementById('participant-count').textContent = data.participant_count;
-
-    // ゲーム開始を検知したらページをリロード
-    if (data.status === 'playing') {
-      window.location.reload();
-    }
-  })
-  .catch(error => {
-    console.error('Status check failed:', error);
-  });
-}
-
-// 2秒ごとにステータスをチェック
-const statusCheckInterval = setInterval(checkRoomStatus, 2000);
-
-// ページを離れる時にインターバルをクリア
-window.addEventListener('beforeunload', function() {
-  clearInterval(statusCheckInterval);
-});
-</script>

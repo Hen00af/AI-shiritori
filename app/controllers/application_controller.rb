@@ -1,6 +1,6 @@
 class ApplicationController < ActionController::Base
   include GuestUserConcern
-  
+
   before_action :configure_permitted_parameters, if: :devise_controller?
   before_action :ensure_guest_user_info
 

@@ -7,29 +7,31 @@ require_relative 'shiritori_rules/connection_rule'
 require_relative 'shiritori_rules/duplication_rule'
 require_relative 'shiritori_rules/word_length_rule'
 
-
 class ShiritoriLogic
-  # 適用するルールを定義
   RULES = [
     ShiritoriRules::PresenceRule,
     ShiritoriRules::HiraganaOnlyRule,
-    ShiritoriRules::LosingCharacterRule,
+    ShiritoriRules::WordLengthRule,
     ShiritoriRules::ConnectionRule,
     ShiritoriRules::DuplicationRule,
-    ShiritoriRules::WordLengthRule,
+    ShiritoriRules::LosingCharacterRule,
   ].freeze
 
   def initialize(room, room_participant)
     @room = room
     @room_participant = room_participant
-    @user = room_participant.user || (defined?(current_user) ? current_user : nil)
+    @words = @room_participant.words.order(created_at: :asc)
   end
 
   def validate(new_word)
     RULES.each do |rule_class|
-      result = rule_class.new(@room, new_word, @user).validate
-      return result if result.present?
+      rule = rule_class.new(new_word, @words)
+
+      if (result = rule.validate)
+        return result
+      end
     end
-    { status: :success }
+
+    { status: :success, message: 'OK' }
   end
 end

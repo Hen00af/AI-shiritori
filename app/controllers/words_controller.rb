@@ -1,19 +1,23 @@
+# app/controllers/words_controller.rb
+
 class WordsController < ApplicationController
   def create
     room = Room.find(word_params[:room_id])
     new_word = word_params[:body]
 
-    # 参加者情報を取得
-    room_participant = RoomParticipant.find(word_params[:room_participant_id])
+    unless room.playing?
+      return head :bad_request if request.format.json?
 
-    # ロジックを初期化
+      return
+    end
+
+    room_participant = RoomParticipant.find(word_params[:room_participant_id])
     logic = ShiritoriLogic.new(room, room_participant)
     result = logic.validate(new_word)
 
     case result[:status]
     when :success
-      # ===== ここで基礎点を計算しています =====
-      score = 100 + (new_word.length**2) * 10 # 新しい計算式
+      score = 100 + ((new_word.length**2) * 10)
       @word_record = room.words.create(
         body: new_word,
         score: score,
@@ -21,20 +25,17 @@ class WordsController < ApplicationController
         user: room_participant.user
       )
 
-      # 単体評価Job
-      ShiritoriEvaluationJob.perform_later(@word_record)
-      # 連鎖ボーナス評価Job
-      previous_word = room.words.where.not(id: @word_record.id).order(created_at: :desc).first
-      ShiritoriChainEvaluationJob.perform_later(@word_record, previous_word) if previous_word
+      word_html = render_to_string(partial: 'words/word', formats: [:html], locals: { word: @word_record })
+      RoomChannel.broadcast_to(room, {
+                                 event: 'word_created',
+                                 word_html: word_html,
+                                 participant_id: @word_record.room_participant_id,
+                               })
 
-      render turbo_stream: [
-        turbo_stream.append('word-history', partial: 'words/word', locals: { word: @word_record }),
-        turbo_stream.replace('word_form', partial: 'rooms/word_form', locals: { room: room }),
-      ]
+      head :no_content
 
     when :game_over
-      # ===== ここでも基礎点を計算しています =====
-      score = 100 + (new_word.length**2) * 10 # 新しい計算式
+      score = 100 + ((new_word.length**2) * 10)
       word_record = room.words.create!(
         body: new_word,
         score: score,
@@ -42,69 +43,47 @@ class WordsController < ApplicationController
         user: room_participant.user
       )
 
-      # 単体評価Job
-      ShiritoriEvaluationJob.perform_later(word_record)
-      # 連鎖ボーナス評価Job
-      previous_word = room.words.where.not(id: word_record.id).order(created_at: :desc).first
-      ShiritoriChainEvaluationJob.perform_later(word_record, previous_word) if previous_word
+      word_html = render_to_string(partial: 'words/word', formats: [:html], locals: { word: word_record })
+      RoomChannel.broadcast_to(room, {
+                                 event: 'word_created',
+                                 word_html: word_html,
+                                 participant_id: word_record.room_participant_id,
+                               })
 
-      if room.game_mode == "score_attack"
-        # スコアアタック
-        render turbo_stream: [
-          turbo_stream.update('flash-messages',
-            partial: 'layouts/flash',
-            locals: { message: result[:message], type: 'danger' }
-          ),
-          turbo_stream.append_all('body', view_context.javascript_tag(<<-JS.squish))
-            setTimeout(function() {
-              window.location.href = '#{result_room_path(room)}';
-            }, 1000);
-          JS
-        ]
+      RoomChannel.broadcast_to(room, {
+                                 event: 'player_game_over',
+                                 user_id: room_participant.user&.id,
+                                 guest_id: room_participant.guest_id,
+                                 message: result[:message],
+                               })
 
-      else
-        # ★ 対戦モード
-        alive_participants = room.room_participants.any? do |p|
-          last_word = room.words.where(room_participant: p).last
-          last_word && !last_word.body.ends_with?("ん")
-        end
-
-        if alive_participants
-          # まだ続いてる人がいる → 待機
-          render turbo_stream: [
-            turbo_stream.update('flash-messages',
-              partial: 'layouts/flash',
-              locals: { message: result[:message], type: 'danger' }
-            ),
-            turbo_stream.append('word-history',
-              partial: 'words/word',
-              locals: { word: word_record }
-            ),
-            turbo_stream.append_all('body', view_context.javascript_tag(<<-JS.squish))
-              document.dispatchEvent(new CustomEvent('game:over', {
-                detail: { message: '#{result[:message]}' }
-              }))
-            JS
-          ]
-        else
-          # 対戦モード（全員「ん」で終了 → 即リザルト）
-          render turbo_stream: [
-            turbo_stream.append_all('body', view_context.javascript_tag(<<-JS.squish))
-              setTimeout(function() {
-                window.location.href = '#{result_room_path(room)}';
-              }, 1000);
-            JS
-          ]
-        end
+      all_over = room.room_participants.includes(:words).all? do |p|
+        last_word = p.words.max_by(&:created_at)
+        last_word&.body&.ends_with?('ん')
       end
-    else
-      # ❗️このブロックを戻さないと警告表示されない
+
+      if all_over || room.game_mode == 'score_attack'
+        RoomChannel.broadcast_to(room, { event: 'all_players_over' })
+      end
+
+      head :no_content
+
+    else # validation error
+      # フォームを再描画するために、現在の参加者情報を取得する
+      @current_participant = if guest_user?
+                               room.room_participants.find_by(guest_id: current_guest_id)
+                             else
+                               room.room_participants.find_by(user_id: current_user.id)
+                             end
+
       render turbo_stream: [
         turbo_stream.update('flash-messages',
-          partial: 'layouts/flash',
-          locals: { message: result[:message], type: 'warning' }
-        ),
-        turbo_stream.replace('word_form', partial: 'rooms/word_form', locals: { room: room }),
+                            partial: 'layouts/flash',
+                            locals: { message: result[:message], type: 'warning' }),
+        # locals に @current_participant を追加してパーシャルに渡す
+        turbo_stream.replace('word_form',
+                             partial: 'rooms/word_form',
+                             locals: { room: room, current_participant: @current_participant }),
       ], status: :unprocessable_entity
     end
   end

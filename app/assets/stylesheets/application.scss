@@ -46,27 +46,10 @@ body{
     height: 65px;
     clip-path: polygon(0% 0,100% 0,100% 100%,0% 100%);
 }
-.joinpossible-text{
-    font-size: 20px;
-    position: absolute;    /* 中央固定したいなら絶対配置 */
-    left: 50%;
-    top:80%;
-    transform: translate(-50%, 0%);
-}
-.joinpossible-subtext{
-    font-size: 20px;
-    position: absolute;    /* 中央固定したいなら絶対配置 */
-    left: 50%;
-    top:85%;
-    transform: translate(-50%, 0%);
-}
+
 .list-group{
-    font-size: 20px;
-    position: absolute;    /* 中央固定したいなら絶対配置 */
-    left: 50%;
-    top:85%;
     width: 80%;
-    transform: translate(-50%, 0%);
+    margin: 0 auto; /* 中央寄せ */
 }
 
 .titletext{
@@ -93,7 +76,7 @@ body{
     left: 50%;
     top: 30px;
     backdrop-filter: blur(1px);
-    
+
     transform: translate(-50%);
     text-align: center;    /* テキスト中央寄せ */
 }
@@ -106,7 +89,7 @@ body{
     color: cyan;
     left: 50%;
     backdrop-filter: blur(1px);
-    
+
     transform: translate(-50%);
     text-align: center;    /* テキスト中央寄せ */
     clip-path: polygon(1% 1%, 99% 1%, 89% 98%, 11% 98%);
@@ -182,4 +165,226 @@ body{
 .all{
     padding-left:50px;
 }
+// しりとり入力フォームのスタイル
+.word-input {
+  background-color: #333 !important;
+  color: #fff !important;
+  border: 1px solid #00ffe7 !important;
+  box-shadow: 0 0 8px #00ffe7a0;
+  // 文字が入力されたときの背景色も指定
+  -webkit-text-fill-color: #fff;
+  -webkit-box-shadow: 0 0 0px 1000px #333 inset;
+  transition: background-color 5000s ease-in-out 0s;
+}
+.word-input::placeholder {
+  color: #888 !important;
+}
+.word-input:focus {
+  background-color: #444 !important;
+  box-shadow: 0 0 12px #00ffe7;
+}
 
+.header-menu-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}
+
+.ranking-container {
+  position: relative; /* カードの位置を計算する基準点となる */
+}
+
+.result-card-wrapper {
+  /* 順位変動アニメーションの核となる設定 */
+  transition: transform 0.8s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.5s ease;
+  width: 100%; /* transformを正しく適用するために幅を指定 */
+  left: 0;
+  right: 0;
+}
+
+.result-card-wrapper.initial-hidden {
+  opacity: 0;
+  transform: translateY(30px);
+}
+
+.ranking-container.is-animating .result-card-wrapper:not(.spotlight) {
+  opacity: 0.5;
+  transform: scale(0.98);
+}
+.result-card-wrapper.spotlight {
+  transform: scale(1.02);
+  z-index: 10; /* 他のカードより手前に表示 */
+}
+
+.result-card-wrapper.winner .card {
+  border: 2px solid #ffd700 !important;
+  box-shadow: 0 0 20px 8px rgba(255, 215, 0, 0.7) !important;
+}
+
+
+.score-breakdown {
+  padding: 1rem 0;
+
+  .score-item {
+    // 総合スコア
+    &.total-score h3 {
+      color: #00eaff !important; // ネオンブルーを強調
+      text-shadow: 0 0 8px #00eaff, 0 0 12px #00eaff;
+    }
+
+    // 基礎点
+    &.base-score h5 {
+      color: #f8f9fa !important; // 白に近い色で見やすく
+    }
+
+    // AIボーナス
+    &.ai-score h5 {
+      color: #0dcaf0 !important; // Bootstrapのinfoカラーに合わせる
+    }
+
+    // 連鎖ボーナス
+    &.chain-score h5 {
+      color: #198754 !important; // Bootstrapのsuccessカラーに合わせる
+    }
+
+    // 「総合スコア」などのラベルテキスト
+    small {
+      font-size: 0.9rem; // 文字を少し大きく
+      color: #adb5bd !important; // text-mutedより少し明るく
+      text-shadow: none; // 影を消して読みやすく
+    }
+  }
+}
+
+.ranking-table-container {
+  max-height: 280px; /* 5位まで表示されるくらいの高さ */
+  overflow-y: auto;  /* 高さを超えたらスクロール */
+  border-radius: 16px; /* テーブルの角丸に合わせる */
+}
+
+.lobby-heading {
+  color: #00ffe7;
+  text-shadow: 0 0 8px #00ffe7, 0 0 2px #fff;
+}
+
+.futuristic-ranking {
+  background: #181818;
+  color: #fff;
+  border-radius: 16px;
+  box-shadow: 0 4px 24px #00ffe7a0, 0 1px 4px #000a;
+  overflow: hidden;
+  margin-bottom: 2rem;
+  border: none;
+  width: 100%;
+}
+.futuristic-ranking th {
+  background: linear-gradient(90deg,#23234a 0%,#181818 100%);
+  color: #fff;
+  font-weight: bold;
+  border: none;
+  text-shadow: 0 0 2px #00ffe7,0 0 1px #fff;
+  padding: 12px;
+}
+.futuristic-ranking td {
+  border: none;
+  padding: 12px;
+  font-size: 1.1em;
+  background: #222;
+  color: #fff;
+  transition: background 0.2s;
+}
+.futuristic-ranking tr {
+  border-bottom: 1px solid #222;
+}
+.futuristic-ranking tr:hover {
+  background: #23234a;
+  color: #fff;
+}
+.futuristic-ranking tbody tr:first-child {
+  background: linear-gradient(90deg,#00ffe7 0%,#23234a 100%);
+  color: #fff;
+  font-weight: bold;
+  text-shadow: 0 0 3px #fff,0 0 1px #00ffe7;
+}
+
+// 追加
+.user-panel {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 6px 16px;
+  background: rgba(0, 0, 0, 0.6);
+  border: 1px solid #00ffe7;
+  border-radius: 12px;
+  box-shadow: 0 0 12px #00ffe7a0;
+  font-size: 16px;
+  font-weight: bold;
+  letter-spacing: 1px;
+}
+
+.user-panel .username {
+  font-size: 18px;
+  text-shadow: 0 0 6px #00ffe7, 0 0 2px #fff;
+}
+
+.user-panel .guest {
+  color: #aaa;
+  text-shadow: none;
+}
+
+.logout-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border: none;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #ff6b6b, #f06595);
+  color: white;
+  font-weight: bold;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.logout-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0px 4px 12px rgba(0,0,0,0.15);
+}
+
+.music-controls {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+/* 共通スタイル */
+.music-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border: none;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: bold;
+  cursor: pointer;
+  color: rgb(0, 0, 0);
+  background-color: #0d0f0f;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.music-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 3px 8px rgba(0,0,0,0.15);
+}
+
+/* 再生/停止ボタンは緑 */
+.play-btn {
+  //background: linear-gradient(135deg, #38d9a9, #12b886);
+}
+
+/* 次の曲ボタンは青 */
+.next-btn {
+  //background: linear-gradient(135deg, #4dabf7, #1c7ed6);
+}

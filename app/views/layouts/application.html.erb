@@ -7,17 +7,14 @@
     <meta name="mobile-web-app-capable" content="yes">
     <%= csrf_meta_tags %>
     <%= csp_meta_tag %>
+    <%= action_cable_meta_tag %>
 
     <%= yield :head %>
-
-    <%# Enable PWA manifest for installable apps (make sure to enable in config/routes.rb too!) %>
-    <%#= tag.link rel: "manifest", href: pwa_manifest_path(format: :json) %>
 
     <link rel="icon" href="/icon.png" type="image/png">
     <link rel="icon" href="/icon.svg" type="image/svg+xml">
     <link rel="apple-touch-icon" href="/icon.png">
 
-    <%# Includes all stylesheet files in app/assets/stylesheets %>
     <%= stylesheet_link_tag "application", "data-turbo-track": "reload" %>
     <%= javascript_include_tag "application", "data-turbo-track": "reload", type: "module" %>
   </head>
@@ -26,36 +23,64 @@
     <div class="titlecontainer">
       <div class="titlemenubox">
         <% if controller_name == "rooms" %>
-          <% if action_name == "index" %>
-            <!-- ホーム画面でのみBGMボタンを左側に追加 -->
-            <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
-              <!-- 左側：BGMコントロール -->
-              <div style="display: flex; gap: 10px; align-items: center;">
-                <button id="bgm-toggle" class="logout-btn">🔊 BGM</button>
-                <button id="bgm-next" class="logout-btn">⏭️</button>
-              </div>
+          <div class="header-menu-container"
+               <% if action_name == "index" %>
+                 data-controller="bgm"
+                 data-bgm-files-value="<%= [asset_path('bgm1.mp3'), asset_path('bgm2.mp3'), asset_path('bgm3.mp3')].to_json %>"
+               <% end %>>
 
-              <!-- 右側：ユーザー情報とログアウト -->
-              <div class="greeting">
-                <% if current_user %>
-                  こんにちは、<%= current_user.username %> さん
-                  <%= button_to "ログアウト", destroy_user_session_path, method: :delete, class: "logout-btn" %>
-                <% else %>
-                  ゲストでアクセス中です
-                <% end %>
-              </div>
-            </div>
-          <% else %>
-            <!-- rooms#index以外では元のレイアウト -->
-            <div class="greeting">
-              <% if current_user %>
-                こんにちは、<%= current_user.username %> さん
-                <%= button_to "ログアウト", destroy_user_session_path, method: :delete, class: "logout-btn" %>
-              <% else %>
-                ゲストでアクセス中です
+            <div class="music-controls">
+              <% if action_name == "index" %>
+                <button class="music-btn" onclick="toggleImage()">
+                  <img id="music-icon"
+                    src="<%= asset_path('audiobtn_on.png') %>"
+                    alt="BGM"
+                    style="width:32px;height:32px;">
+                </button>
+
+                <script>
+                  // Railsヘルパーを使って、JavaScript変数に正しいアセットパスを格納
+                  const onImagePath = "<%= asset_path('audiobtn_on.png') %>";
+                  const offImagePath = "<%= asset_path('audiobtn_off.png') %>";
+                  
+                  function toggleImage() {
+                    const imgElement = document.getElementById('music-icon');
+                    
+                    // 現在の画像のsrcと正しいパスを比較して切り替える
+                    if (imgElement.src.includes(onImagePath)) {
+                      imgElement.src = offImagePath;
+                    } else {
+                      imgElement.src = onImagePath;
+                    }
+                  }
+                </script>
+
+                <button data-action="click->bgm#next" class="music-btn">
+                  <img 
+                    src="<%= asset_path('change.png') %>" 
+                    alt="次の曲" 
+                    style="width:32px;height:32px;">
+                </button>
               <% end %>
             </div>
-          <% end %>
+
+            <div class="user-panel">
+              <% if current_user %>
+                <span class="username neon-blue">
+                  👾 <%= current_user.username %>
+                </span>
+                <%= button_to destroy_user_session_path, method: :delete, class: "logout-btn" do %>
+                  <i class="fas fa-sign-out-alt"></i>ログアウト
+                <% end %>
+              <% else %>
+                <span class="username guest">GUEST</span>
+              <% end %>
+            </div>
+
+            <% if action_name == "index" %>
+              <audio data-bgm-target="player" preload="auto" style="display: none;"></audio>
+            <% end %>
+          </div>
         <% end %>
       </div>
     </div>
@@ -64,232 +89,16 @@
         <h1 class="titletext_sub"> WORD CHASER </h1>
     </div>
 
-    <!-- ホーム画面でのみBGM用のaudioタグを表示 -->
-    <% if controller_name == "rooms" && action_name == "index" %>
-      <audio id="bgm-player" preload="auto" style="display: none;">
-      </audio>
-    <% end %>
-
     <%= yield %>
   </body>
 </html>
 
 <% if controller_name == "rooms" && action_name == "index" %>
-<script>
-// グローバルなBGM管理オブジェクト
-window.BGMManager = window.BGMManager || (function() {
-  const bgmList = [
-    '<%= asset_path('bgm1.mp3') %>',
-    '<%= asset_path('bgm2.mp3') %>',
-    '<%= asset_path('bgm3.mp3') %>'
-  ];
-
-  let currentTrack = 0;
-  let isPlaying = false;
-  let audioPlayer = null;
-  let toggleButton = null;
-  let nextButton = null;
-  let isInitialized = false;
-
-  function initialize() {
-    if (isInitialized) return;
-
-    audioPlayer = document.getElementById('bgm-player');
-    toggleButton = document.getElementById('bgm-toggle');
-    nextButton = document.getElementById('bgm-next');
-
-    if (!audioPlayer || !toggleButton || !nextButton) {
-      console.log('BGM elements not found, retrying...');
-      setTimeout(initialize, 100);
-      return;
-    }
-
-    // ローカルストレージから設定を取得
-    const savedVolume = localStorage.getItem('bgmVolume') || '0.3';
-    const savedMuted = localStorage.getItem('bgmMuted') === 'true';
-    const savedTrack = parseInt(localStorage.getItem('bgmCurrentTrack')) || 0;
-    const wasPlaying = localStorage.getItem('bgmWasPlaying') === 'true';
-
-    // 設定を適用
-    audioPlayer.volume = parseFloat(savedVolume);
-    audioPlayer.muted = savedMuted;
-    currentTrack = savedTrack;
-
-    // イベントリスナーを設定
-    setupEventListeners();
-
-    // 初期トラックをロード
-    loadTrack(currentTrack);
-
-    // 前回再生中だった場合は再開を試行
-    if (wasPlaying && !savedMuted) {
-      setTimeout(() => {
-        startPlayback();
-      }, 500);
-    }
-
-    updateToggleButton();
-    isInitialized = true;
-    console.log('BGM Manager initialized');
-  }
-
-  function setupEventListeners() {
-    // 曲終了時の処理
-    audioPlayer.addEventListener('ended', function() {
-      console.log('Track ended, playing next');
-      nextTrack();
-    });
-
-    // エラー処理
-    audioPlayer.addEventListener('error', function(e) {
-      console.error('Audio error:', e);
-      setTimeout(() => {
-        nextTrack();
-      }, 1000);
-    });
-
-    // 再生/ミュートボタン
-    toggleButton.addEventListener('click', function() {
-      if (isPlaying && !audioPlayer.muted) {
-        // ミュート
-        audioPlayer.muted = true;
-        localStorage.setItem('bgmMuted', 'true');
-      } else if (isPlaying && audioPlayer.muted) {
-        // ミュート解除
-        audioPlayer.muted = false;
-        localStorage.setItem('bgmMuted', 'false');
-      } else {
-        // 再生開始
-        startPlayback();
-      }
-      updateToggleButton();
-    });
-
-    // 次の曲ボタン
-    nextButton.addEventListener('click', function() {
-      nextTrack();
-    });
-
-    // 音量変更時の保存
-    audioPlayer.addEventListener('volumechange', function() {
-      localStorage.setItem('bgmVolume', audioPlayer.volume.toString());
-    });
-
-    // 再生状態変更時の保存
-    audioPlayer.addEventListener('play', function() {
-      isPlaying = true;
-      localStorage.setItem('bgmWasPlaying', 'true');
-      updateToggleButton();
-    });
-
-    audioPlayer.addEventListener('pause', function() {
-      isPlaying = false;
-      localStorage.setItem('bgmWasPlaying', 'false');
-      updateToggleButton();
-    });
-  }
-
-  function loadTrack(index) {
-    if (bgmList.length === 0) return;
-
-    currentTrack = index % bgmList.length;
-    audioPlayer.src = bgmList[currentTrack];
-    localStorage.setItem('bgmCurrentTrack', currentTrack.toString());
-    console.log('Loading track:', bgmList[currentTrack]);
-  }
-
-  function startPlayback() {
-    if (!audioPlayer) return;
-
-    audioPlayer.muted = false;
-    audioPlayer.play().then(() => {
-      isPlaying = true;
-      localStorage.setItem('bgmMuted', 'false');
-      localStorage.setItem('bgmWasPlaying', 'true');
-      console.log('BGM playback started');
-    }).catch(error => {
-      console.log('Playback failed:', error);
-      isPlaying = false;
-    });
-  }
-
-  function nextTrack() {
-    const wasPlayingBeforeNext = isPlaying;
-    currentTrack = (currentTrack + 1) % bgmList.length;
-    loadTrack(currentTrack);
-
-    if (wasPlayingBeforeNext && !audioPlayer.muted) {
-      audioPlayer.play().catch(error => {
-        console.error('Error playing next track:', error);
-      });
-    }
-  }
-
-  function updateToggleButton() {
-    if (!toggleButton) return;
-
-    if (audioPlayer.muted || !isPlaying) {
-      toggleButton.textContent = '🔇 BGM';
-      toggleButton.classList.remove('btn-secondary');
-      toggleButton.classList.add('btn-outline-secondary');
-    } else {
-      toggleButton.textContent = '🔊 BGM';
-      toggleButton.classList.remove('btn-outline-secondary');
-      toggleButton.classList.add('btn-secondary');
-    }
-  }
-
-  // ページ離脱時の処理
-  window.addEventListener('beforeunload', function() {
-    if (audioPlayer && !audioPlayer.paused) {
-      localStorage.setItem('bgmWasPlaying', 'true');
-    }
-  });
-
-  // 公開API
-  return {
-    initialize: initialize,
-    isInitialized: () => isInitialized
-  };
-})();
-
-// ページ読み込み完了後に初期化
-document.addEventListener('DOMContentLoaded', function() {
-  console.log('DOM loaded, initializing BGM...');
-  BGMManager.initialize();
-});
-
-// Turbo対応（Rails 7のTurboを使用している場合）
-document.addEventListener('turbo:load', function() {
-  console.log('Turbo loaded, reinitializing BGM...');
-  setTimeout(() => {
-    BGMManager.initialize();
-  }, 100);
-});
-
-// ユーザーインタラクション後の自動再生試行
-let hasTriedAutoplay = false;
-document.addEventListener('click', function() {
-  if (!hasTriedAutoplay && BGMManager.isInitialized()) {
-    hasTriedAutoplay = true;
-    const wasPlaying = localStorage.getItem('bgmWasPlaying') === 'true';
-    const muted = localStorage.getItem('bgmMuted') === 'true';
-
-    if (wasPlaying && !muted) {
-      const audioPlayer = document.getElementById('bgm-player');
-      if (audioPlayer && audioPlayer.paused) {
-        audioPlayer.play().catch(console.error);
-      }
-    }
-  }
-}, { once: true });
-</script>
-
 <style>
 /* レスポンシブ対応 */
 @media (max-width: 768px) {
   /* モバイルでは縦並びに */
-  .titlecontainer .titlemenubox > div:first-child {
+  .header-menu-container {
     flex-direction: column;
     gap: 10px;
     align-items: flex-start;

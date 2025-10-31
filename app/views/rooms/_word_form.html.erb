@@ -1,14 +1,25 @@
-<%= turbo_frame_tag "word_form" do %>
-  <%= form_with(model: Word.new, url: words_path, html: {
-        "data-shiritori-target" => "form"
-      }) do |form| %>
-    <%= form.hidden_field :room_id, value: room.id %>
-    <%= form.hidden_field :room_participant_id, value: room.room_participants.find_by(
-      guest_user? ? { guest_id: cookies.encrypted[:guest_id] } : { user_id: current_user.id }
-    )&.id %>
-    <div class="input-group">
-      <%= form.text_field :body, class: 'form-control form-control-lg', placeholder: 'ローマ字で入力...', "data-shiritori-target" => "input", autocomplete: "off" %>
-      <%= form.submit "送信", class: 'btn btn-primary' %>
+<%# app/views/rooms/_word_form.html.erb %>
+
+<%= form_with model: Word.new, url: words_path, id: 'word_form', data: {
+  shiritori_target: 'form',
+  action: 'submit->shiritori#submitWord'
+} do |f| %>
+  <%= f.hidden_field :room_id, value: room.id %>
+  
+  <%# インスタンス変数(@)からローカル変数(current_participant)に変更 %>
+  <%= f.hidden_field :room_participant_id, value: current_participant&.id %>
+  
+  <div class="input-group">
+    <div id="flash-messages">
+      <%# ここに警告メッセージが表示されます %>
     </div>
-  <% end %>
+    <%= f.text_field :body,
+      class: 'form-control word-input',
+      placeholder: 'ひらがなで入力...',
+      autocomplete: 'off',
+      autofocus: true,
+      data: { shiritori_target: 'input' }
+    %>
+    <%= f.submit "送信", class: 'game-btn' %>
+  </div>
 <% end %>

@@ -1,13 +1,14 @@
 # frozen_string_literal: true
 
 module ShiritoriRules
+  # 「ん」で終わる単語かどうかを判定するルール
   class LosingCharacterRule < BaseRule
-    LOSING_CHARS = ['ん'].freeze
-
     def validate
-      return unless LOSING_CHARS.include?(new_word[-1])
-
-      { status: :game_over, message: "「#{new_word[-1]}」で終わる単語は使えません。" }
+      # もし「ん」で終わっていたら、ゲームオーバー用の特別なステータスを返す
+      if @new_word.ends_with?('ん')
+        { status: :game_over, message: '「ん」で終わる単語です！' }
+      end
+      # 問題なければ何も返さない
     end
   end
 end

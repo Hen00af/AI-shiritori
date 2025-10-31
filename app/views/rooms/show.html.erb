@@ -1,8 +1,17 @@
-<div class="container py-5" data-controller="shiritori" data-shiritori-room-id-value="<%= @room.id %>">
+<%# app/views/rooms/show.html.erb %>
+
+<div
+  class="container py-5"
+  data-controller="shiritori"
+  data-shiritori-room-id-value="<%= @room.id %>"
+  data-shiritori-started-at-value="<%= @room.started_at&.iso8601 %>"
+  data-shiritori-current-user-id-value="<%= current_user&.id %>"
+  data-shiritori-current-guest-id-value="<%= guest_user? ? current_guest_id : '' %>"
+  data-shiritori-current-participant-id-value="<%= @words.first&.room_participant_id %>"
+>
   <div id="countdown-area" class="text-center py-5 fs-1 fw-bold">3</div>
   <div id="game-area" style="display:none;">
 
-  <!-- プレイヤー情報を追加 -->
   <div class="card text-center mb-3">
     <div class="card-body">
       <h3 class="card-title">
@@ -20,7 +29,7 @@
   <div class="card text-center mb-4">
     <div class="card-body">
       <h2 class="card-title">残り時間</h2>
-      <h1 class="red" data-shiritori-target="timer">30</p>
+      <h1 class="red" data-shiritori-target="timer">30</h1>
     </div>
   </div>
 
@@ -28,7 +37,7 @@
     <div class="card-header fw-bold">あなたの単語履歴</div>
     <div class="card-body" id="word-history" style="height: 200px; overflow-y: scroll;">
       <% @words.each do |word| %>
-        <p class="mb-1 fs-5"><%= word.body %></p>
+        <%= render 'words/word', word: word %>
       <% end %>
     </div>
   </div>
@@ -41,49 +50,8 @@
     <%# ここに警告メッセージが表示されます %>
   </div>
 
-    <%= render "rooms/word_form", room: @room %>
+    <%# フォームに current_participant を渡す %>
+    <%= render "rooms/word_form", room: @room, current_participant: @current_participant %>
   </div>
 
 </div>
-
-<!-- カウントダウンはStimulusコントローラーで制御 -->
-<script>
-// ゲームオーバー状態を管理
-let gameOver = false;
-
-// ゲームオーバーイベントを監聴
-document.addEventListener('game:over', function(event) {
-  gameOver = true;
-
-  // 入力フィールドを無効化
-  const wordForm = document.getElementById('word_form');
-  if (wordForm) {
-    const inputs = wordForm.querySelectorAll('input, button');
-    inputs.forEach(input => {
-      input.disabled = true;
-      if (input.type === 'text') {
-        input.placeholder = 'ゲームオーバー - 時間終了まで待機中...';
-        input.style.backgroundColor = '#f0f0f0';
-      }
-    });
-  }
-
-  // ゲームオーバーメッセージを表示
-  const gameOverMessage = document.getElementById('game-over-message');
-  if (gameOverMessage) {
-    gameOverMessage.classList.remove('d-none');
-  }
-
-  // ★重要：リダイレクト処理は削除（タイマー終了まで待機）
-  console.log('ゲームオーバー状態に設定されました');
-});
-
-// 既存のStimulusコントローラーがある場合は、そちらでも制御
-// フォーム送信時にもゲームオーバーチェックを追加
-document.addEventListener('submit', function(event) {
-  if (gameOver && event.target.closest('#word_form')) {
-    event.preventDefault();
-    return false;
-  }
-});
-</script>
