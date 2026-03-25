@@ -15,15 +15,10 @@
 /config/credentials/*.key
 
 # ログ・一時ファイル
-/log/*
-!/log/.keep
-
+/log/
 /tmp/*
-!/tmp/.keep
 !/tmp/pids/
 !/tmp/pids/.keep
-!/tmp/storage/
-!/tmp/storage/.keep
 
 # ストレージ（開発環境のアップロードファイル・SQLite）
 /storage/*

@@ -7,3 +7,5 @@
 スコアはAIがしりとりで使った言葉の評価をすることによって決まる
 
 (pdfs)[https://github.com/Hen00af/AI-shiritori/blob/main/doc/Word%20chaser%20(2).pdf]
+
+AWS へ載せる場合は [doc/aws-deploy.md](/Users/hattorinarimakoto/Documents/codes/AI-shiritori/doc/aws-deploy.md) を参照。

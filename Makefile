@@ -6,6 +6,8 @@ export
 AWS_ACCOUNT  ?= $(shell aws sts get-caller-identity --query Account --output text)
 ECR_REPO     ?= $(AWS_ACCOUNT).dkr.ecr.$(AWS_REGION).amazonaws.com/ai-shiritori
 
+COMPOSE = $(COMPOSE) -f deploy/docker-compose.yml
+
 .PHONY: build up down restart logs ps \
         setup db-migrate db-seed db-reset \
         bash console bundle exec \
@@ -14,50 +16,50 @@ ECR_REPO     ?= $(AWS_ACCOUNT).dkr.ecr.$(AWS_REGION).amazonaws.com/ai-shiritori
 # ===== 基本操作 =====
 
 build:
-	docker compose build
+	$(COMPOSE) build
 
 up:
-	docker compose up -d
+	$(COMPOSE) up -d
 
 down:
-	docker compose down
+	$(COMPOSE) down
 
 restart:
-	docker compose restart
+	$(COMPOSE) restart
 
 logs:
-	docker compose logs -f
+	$(COMPOSE) logs -f
 
 ps:
-	docker compose ps
+	$(COMPOSE) ps
 
 # ===== セットアップ =====
 
 setup: build up db-migrate db-seed
 
 db-migrate:
-	docker compose exec web bundle exec rails db:migrate
+	$(COMPOSE) exec web bundle exec rails db:migrate
 
 db-seed:
-	docker compose exec web bundle exec rails db:seed
+	$(COMPOSE) exec web bundle exec rails db:seed
 
 db-reset:
-	docker compose exec web bundle exec rails db:reset
+	$(COMPOSE) exec web bundle exec rails db:reset
 
 # ===== 開発ユーティリティ =====
 
 bash:
-	docker compose exec web bash
+	$(COMPOSE) exec web bash
 
 console:
-	docker compose exec web bundle exec rails console
+	$(COMPOSE) exec web bundle exec rails console
 
 bundle:
-	docker compose exec web bundle install
+	$(COMPOSE) exec web bundle install
 
 # 任意のコマンドを実行: make exec CMD="rails routes"
 exec:
-	docker compose exec web $(CMD)
+	$(COMPOSE) exec web $(CMD)
 
 # ===== デプロイ（AWS ECS + ECR） =====
 
@@ -68,7 +70,7 @@ ecr-login:
 
 # イメージをビルドして ECR へ push
 push: ecr-login
-	docker build -t $(ECR_REPO):$(IMAGE_TAG) .
+	docker build -f deploy/Dockerfile -t $(ECR_REPO):$(IMAGE_TAG) .
 	docker push $(ECR_REPO):$(IMAGE_TAG)
 
 # ECS サービスを最新イメージで再デプロイ
