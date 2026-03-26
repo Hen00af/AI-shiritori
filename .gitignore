@@ -12,7 +12,17 @@
 
 # シークレット・認証情報
 /config/master.key
+/config/*.key
 /config/credentials/*.key
+
+# macOS
+.DS_Store
+
+# データベース
+/db/*.sqlite3
+/storage/*.sqlite3
+/storage/*.sqlite3-shm
+/storage/*.sqlite3-wal
 
 # ログ・一時ファイル
 /log/
