@@ -5,21 +5,27 @@
   action: 'submit->shiritori#submitWord'
 } do |f| %>
   <%= f.hidden_field :room_id, value: room.id %>
-  
-  <%# インスタンス変数(@)からローカル変数(current_participant)に変更 %>
   <%= f.hidden_field :room_participant_id, value: current_participant&.id %>
-  
-  <div class="input-group">
-    <div id="flash-messages">
-      <%# ここに警告メッセージが表示されます %>
+
+  <div class="position-relative">
+    <div class="d-flex gap-2 align-items-stretch">
+      <%= f.text_field :body,
+        class: 'form-control word-input flex-grow-1',
+        placeholder: 'ひらがなで入力（ローマ字可）',
+        autocomplete: 'off',
+        autofocus: true,
+        data: {
+          shiritori_target: 'input',
+          action: 'input->shiritori#previewScore'
+        }
+      %>
+      <%= f.submit "SEND",
+        class: 'game-btn',
+        style: 'margin: 0; padding: 12px 20px; letter-spacing: 3px; font-size: 0.85rem;'
+      %>
     </div>
-    <%= f.text_field :body,
-      class: 'form-control word-input',
-      placeholder: 'ひらがなで入力...',
-      autocomplete: 'off',
-      autofocus: true,
-      data: { shiritori_target: 'input' }
-    %>
-    <%= f.submit "送信", class: 'game-btn' %>
+    <div style="display: flex; justify-content: flex-end; margin-top: 4px; height: 16px;">
+      <span data-shiritori-target="scorePreview" style="font-size: 0.72rem; color: rgba(0,255,180,0.5); font-family: 'Courier New', monospace; letter-spacing: 1px;"></span>
+    </div>
   </div>
 <% end %>

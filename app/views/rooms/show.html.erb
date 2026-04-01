@@ -1,7 +1,7 @@
 <%# app/views/rooms/show.html.erb %>
 
 <div
-  class="container py-5"
+  class="container py-4"
   data-controller="shiritori"
   data-shiritori-room-id-value="<%= @room.id %>"
   data-shiritori-started-at-value="<%= @room.started_at&.iso8601 %>"
@@ -9,75 +9,108 @@
   data-shiritori-current-guest-id-value="<%= guest_user? ? current_guest_id : '' %>"
   data-shiritori-current-participant-id-value="<%= @words.first&.room_participant_id %>"
 >
-  <div id="countdown-area" class="text-center py-5 fs-1 fw-bold">3</div>
-  <div id="game-area" style="display:none;">
+  <%# カウントダウン %>
+  <div id="countdown-area">
+    <span class="countdown-number">3</span>
+  </div>
 
-  <div class="card text-center mb-3">
-    <div class="card-body">
-      <h3 class="card-title">
-        プレイヤー:
+  <%# ゲームエリア（カウント後に表示） %>
+  <div id="game-area" style="display:none; max-width: 600px; margin: 0 auto;">
+
+    <%# プレイヤー名 %>
+    <div class="text-center mb-3">
+      <p class="game-label mb-0">PLAYER</p>
+      <h4 class="mb-0" style="letter-spacing: 3px; font-size: 1rem;">
         <% if guest_user? %>
           <%= cookies.encrypted[:guest_name] %>
         <% else %>
           <%= current_user.username %>
         <% end %>
-      </h3>
-      <small class="text-muted">あなた専用のしりとり画面です</small>
+      </h4>
     </div>
-  </div>
 
-  <div class="d-flex justify-content-center gap-3 mb-4">
-    <div class="card text-center flex-grow-1">
-      <div class="card-body">
-        <h2 class="card-title">残り時間</h2>
-        <h1 class="red" data-shiritori-target="timer">30</h1>
+    <%# ステータスバー: タイマー / 単語数 / コンボ %>
+    <div class="d-flex justify-content-center gap-3 mb-4">
+      <%# タイマー %>
+      <div class="card text-center flex-grow-1">
+        <div class="card-body py-3 px-2">
+          <p class="game-label mb-1">TIME</p>
+          <div class="red mb-0" style="font-size: 2.8rem; font-weight: 900; line-height: 1; font-family: 'Courier New', monospace;" data-shiritori-target="timer">30</div>
+          <div class="timer-bar-container mt-2">
+            <div class="timer-bar" data-shiritori-target="timerBar"></div>
+          </div>
+        </div>
       </div>
-    </div>
-    <div class="card text-center" style="min-width: 120px;">
-      <div class="card-body">
-        <h2 class="card-title" style="font-size: 1rem;">単語数</h2>
-        <div class="word-counter">
-          <span class="count" data-shiritori-target="wordCount"><%= @words.count { |w| w.score > 0 } %></span>
+
+      <%# 単語数 %>
+      <div class="card text-center" style="min-width: 90px;">
+        <div class="card-body py-3 px-2">
+          <p class="game-label mb-1">WORDS</p>
+          <div style="font-size: 2rem; font-weight: 900; color: #fff; font-family: 'Courier New', monospace; text-shadow: 0 0 8px rgba(0,234,255,0.5);" data-shiritori-target="wordCount"><%= @words.count { |w| w.score > 0 } %></div>
+        </div>
+      </div>
+
+      <%# コンボ %>
+      <div class="card text-center" style="min-width: 90px;">
+        <div class="card-body py-3 px-2 combo-display" data-shiritori-target="comboDisplay">
+          <p class="game-label mb-1">COMBO</p>
+          <span class="combo-fire">🔥</span>
+          <div class="combo-number" data-shiritori-target="comboCount">0</div>
+          <div class="combo-label">× CHAIN</div>
         </div>
       </div>
     </div>
-  </div>
 
-  <div class="d-flex justify-content-center align-items-center gap-4 mb-3">
-    <div class="text-center">
-      <small class="text-muted" style="text-shadow: none;">次の文字</small>
-      <div class="next-char-hint" data-shiritori-target="nextChar">
-        <%= @words.last&.body&.last || 'り' %>
+    <%# 前の単語 + 次の文字 %>
+    <div class="d-flex justify-content-center align-items-center gap-3 mb-4 flex-wrap">
+      <div class="text-center">
+        <p class="game-label">LAST WORD</p>
+        <div style="min-width: 100px; padding: 8px 16px; background: rgba(0,0,0,0.4); border: 1px solid rgba(0,234,255,0.15); border-radius: 10px; color: rgba(200,230,255,0.7); font-size: 1rem; letter-spacing: 2px;" data-shiritori-target="lastWord">
+          <%= @words.last&.body || '---' %>
+        </div>
+      </div>
+      <div class="text-center" style="font-size: 1.2rem; color: rgba(0,234,255,0.3); padding-top: 20px;">→</div>
+      <div class="text-center">
+        <p class="game-label">NEXT CHAR</p>
+        <div class="next-char-hint" data-shiritori-target="nextChar">
+          <%= @words.last&.body&.last || 'り' %>
+        </div>
+      </div>
+      <div class="text-center">
+        <p class="game-label">CHALLENGE</p>
+        <div class="char-limit-badge" data-shiritori-target="charChallenge">---</div>
+        <div class="challenge-result d-none" data-shiritori-target="challengeResult"></div>
       </div>
     </div>
-    <div class="text-center">
-      <small class="text-muted" style="text-shadow: none;">チャレンジ</small>
-      <div class="char-limit-badge" data-shiritori-target="charChallenge">
-        ---
+
+    <%# 単語入力フォーム %>
+    <div class="mb-4">
+      <%= render "rooms/word_form", room: @room, current_participant: @current_participant %>
+    </div>
+
+    <%# エラーメッセージ %>
+    <div id="flash-messages"></div>
+
+    <%# ゲームオーバー時 %>
+    <div id="game-over-message" class="alert alert-info text-center d-none">
+      ゲーム終了！時間終了まで待機してください...
+    </div>
+
+    <%# 単語履歴 %>
+    <div class="card text-start mt-3">
+      <div class="card-header" style="letter-spacing: 2px; font-size: 0.72rem;">
+        ◈ WORD HISTORY
       </div>
-      <div class="challenge-result d-none" data-shiritori-target="challengeResult"></div>
+      <div class="card-body" id="word-history" style="height: 160px; overflow-y: auto; padding: 6px 12px;">
+        <% @words.each do |word| %>
+          <%= render 'words/word', word: word %>
+        <% end %>
+      </div>
     </div>
+
   </div>
 
-  <div class="card mb-4 text-start">
-    <div class="card-header fw-bold">あなたの単語履歴</div>
-    <div class="card-body" id="word-history" style="height: 200px; overflow-y: scroll;">
-      <% @words.each do |word| %>
-        <%= render 'words/word', word: word %>
-      <% end %>
-    </div>
-  </div>
-
-  <div id="game-over-message" class="alert alert-info text-center fs-4 d-none">
-    ゲーム終了！時間終了まで待機してください...
-  </div>
-
-  <div id="flash-messages">
-    <%# ここに警告メッセージが表示されます %>
-  </div>
-
-    <%# フォームに current_participant を渡す %>
-    <%= render "rooms/word_form", room: @room, current_participant: @current_participant %>
-  </div>
+  <%# フラッシュエフェクト用オーバーレイ %>
+  <div class="word-submit-flash" id="submit-flash"></div>
 
 </div>

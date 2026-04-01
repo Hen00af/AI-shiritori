@@ -1,46 +1,56 @@
-<div class="all">
-  <h2>Edit <%= resource_name.to_s.humanize %></h2>
+<div class="container py-5" style="max-width: 480px; margin: 40px auto;">
+  <div class="card">
+    <div class="card-body p-4">
+      <div class="text-center mb-4">
+        <p class="game-label mb-1">PLAYER SETTINGS</p>
+        <h2 style="letter-spacing: 4px; font-size: 1.3rem;">EDIT PROFILE</h2>
+      </div>
 
-  <%= form_for(resource, as: resource_name, url: registration_path(resource_name), html: { method: :put }) do |f| %>
-    <%= render "devise/shared/error_messages", resource: resource %>
+      <%= form_for(resource, as: resource_name, url: registration_path(resource_name), html: { method: :put }) do |f| %>
+        <%= render "devise/shared/error_messages", resource: resource %>
 
-    <div class="field">
-      <%= f.label :email %><br />
-      <%= f.email_field :email, autofocus: true, autocomplete: "email" %>
-    </div>
+        <div class="mb-3">
+          <%= f.label :email, "EMAIL", class: "game-label d-block mb-1" %>
+          <%= f.email_field :email, autofocus: true, autocomplete: "email",
+              class: "form-control word-input", placeholder: "your@email.com" %>
+          <% if devise_mapping.confirmable? && resource.pending_reconfirmation? %>
+            <div style="font-size: 0.75rem; color: rgba(255,200,0,0.7); margin-top: 4px; letter-spacing: 1px;">
+              確認待ち: <%= resource.unconfirmed_email %>
+            </div>
+          <% end %>
+        </div>
 
-    <% if devise_mapping.confirmable? && resource.pending_reconfirmation? %>
-      <div>Currently waiting confirmation for: <%= resource.unconfirmed_email %></div>
-    <% end %>
+        <div class="mb-3">
+          <%= f.label :password, "NEW PASSWORD", class: "game-label d-block mb-1" %>
+          <span style="font-size: 0.7rem; color: rgba(0,200,220,0.4); letter-spacing: 1px;">変更しない場合は空白のまま</span>
+          <%= f.password_field :password, autocomplete: "new-password",
+              class: "form-control word-input mt-1", placeholder: "••••••••" %>
+          <% if @minimum_password_length %>
+            <div style="font-size: 0.7rem; color: rgba(0,200,220,0.4); margin-top: 2px; letter-spacing: 1px;">MIN <%= @minimum_password_length %> CHARS</div>
+          <% end %>
+        </div>
 
-    <div class="field">
-      <%= f.label :password %> <i>(leave blank if you don't want to change it)</i><br />
-      <%= f.password_field :password, autocomplete: "new-password" %>
-      <% if @minimum_password_length %>
-        <br />
-        <em><%= @minimum_password_length %> characters minimum</em>
+        <div class="mb-3">
+          <%= f.label :password_confirmation, "CONFIRM NEW PASSWORD", class: "game-label d-block mb-1" %>
+          <%= f.password_field :password_confirmation, autocomplete: "new-password",
+              class: "form-control word-input", placeholder: "••••••••" %>
+        </div>
+
+        <div class="mb-3" style="border-top: 1px solid rgba(0,234,255,0.1); padding-top: 16px;">
+          <%= f.label :current_password, "CURRENT PASSWORD", class: "game-label d-block mb-1" %>
+          <span style="font-size: 0.7rem; color: rgba(0,200,220,0.4); letter-spacing: 1px;">変更確認のために必要です</span>
+          <%= f.password_field :current_password, autocomplete: "current-password",
+              class: "form-control word-input mt-1", placeholder: "••••••••" %>
+        </div>
+
+        <div class="d-grid mt-4">
+          <%= f.submit "→ UPDATE", class: "game-btn", style: "width: 100%; margin: 0;", data: { turbo: false } %>
+        </div>
       <% end %>
     </div>
+  </div>
 
-    <div class="field">
-      <%= f.label :password_confirmation %><br />
-      <%= f.password_field :password_confirmation, autocomplete: "new-password" %>
-    </div>
-
-    <div class="field">
-      <%= f.label :current_password %> <i>(we need your current password to confirm your changes)</i><br />
-      <%= f.password_field :current_password, autocomplete: "current-password" %>
-    </div>
-
-    <div class="actions">
-      <%= f.submit "更新する", class: "game-btn", data: { turbo: false } %>
-    </div>
-  <% end %>
-
-  <h3>Cancel my account</h3>
-
-  <div>Unhappy? <%= button_to "Cancel my account", registration_path(resource_name), data: { confirm: "Are you sure?", turbo_confirm: "Are you sure?" }, method: :delete %></div>
-
-  <%= link_to "Back", :back %>
-
+  <div class="text-center mt-3">
+    <%= link_to "← BACK", :back, style: "color: rgba(0,234,255,0.5); font-size: 0.8rem; letter-spacing: 2px; text-decoration: none;" %>
+  </div>
 </div>

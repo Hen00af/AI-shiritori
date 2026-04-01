@@ -1,28 +1,39 @@
-<div class="all">
-  <h2>Log in</h2>
-
-  <%= form_for(resource, as: resource_name, url: session_path(resource_name)) do |f| %>
-    <div class="field">
-      <%= f.label :email %><br />
-      <%= f.email_field :email, autofocus: true, autocomplete: "email" %>
-    </div>
-
-    <div class="field">
-      <%= f.label :password %><br />
-      <%= f.password_field :password, autocomplete: "current-password" %>
-    </div>
-
-    <% if devise_mapping.rememberable? %>
-      <div class="field">
-        <%= f.check_box :remember_me %>
-        <%= f.label :remember_me %>
+<div class="container py-5" style="max-width: 440px; margin: 40px auto;">
+  <div class="card">
+    <div class="card-body p-4">
+      <div class="text-center mb-4">
+        <p class="game-label mb-1">PLAYER ACCESS</p>
+        <h2 style="letter-spacing: 4px; font-size: 1.4rem;">LOGIN</h2>
       </div>
-    <% end %>
 
-    <div class="actions">
-    <%= f.submit "ログイン", class: "game-btn", data: { turbo: false } %>
+      <%= form_for(resource, as: resource_name, url: session_path(resource_name)) do |f| %>
+        <div class="mb-3">
+          <%= f.label :email, "EMAIL", class: "game-label d-block mb-1" %>
+          <%= f.email_field :email, autofocus: true, autocomplete: "email",
+              class: "form-control word-input", placeholder: "your@email.com" %>
+        </div>
+
+        <div class="mb-3">
+          <%= f.label :password, "PASSWORD", class: "game-label d-block mb-1" %>
+          <%= f.password_field :password, autocomplete: "current-password",
+              class: "form-control word-input", placeholder: "••••••••" %>
+        </div>
+
+        <% if devise_mapping.rememberable? %>
+          <div class="mb-3 d-flex align-items-center gap-2">
+            <%= f.check_box :remember_me, style: "accent-color: #00eaff;" %>
+            <label style="color: rgba(0,200,220,0.6); font-size: 0.8rem; letter-spacing: 1px; text-shadow: none;">REMEMBER ME</label>
+          </div>
+        <% end %>
+
+        <div class="d-grid mt-4">
+          <%= f.submit "→ LOGIN", class: "game-btn", style: "width: 100%; margin: 0;", data: { turbo: false } %>
+        </div>
+      <% end %>
     </div>
-  <% end %>
+  </div>
 
-  <%= render "devise/shared/links" %>
+  <div class="text-center mt-3">
+    <%= render "devise/shared/links" %>
+  </div>
 </div>

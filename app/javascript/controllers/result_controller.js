@@ -195,11 +195,12 @@ export default class extends Controller {
   updateRanksAndDetails(rankedResults) {
     rankedResults.forEach((resultData, index) => {
       const rank = index + 1;
+      const rankLabel = rank === 1 ? '🥇 1位' : rank === 2 ? '🥈 2位' : rank === 3 ? '🥉 3位' : `${rank}位`;
       const cardId = `participant-${resultData.participant_id}`;
       const cardElement = document.getElementById(cardId);
       if (cardElement) {
         const rankBadge = cardElement.querySelector('.rank-badge');
-        if (rankBadge) rankBadge.textContent = `${rank}位`;
+        if (rankBadge) rankBadge.textContent = rankLabel;
       }
     });
   }
@@ -282,50 +283,57 @@ export default class extends Controller {
     const totalScore = isInitial ? data.total_base_score : data.total_score;
     const aiScore = isInitial ? '---' : (data.total_ai_score ?? 0);
     const chainBonusScore = isInitial ? '---' : (data.total_chain_bonus_score ?? 0);
-    const wordsHistoryHtml = isInitial ? 
-      '<div class="text-muted p-3">最終結果発表までお待ちください...</div>' : 
+    const wordsHistoryHtml = isInitial ?
+      '<div style="color: rgba(100,150,180,0.5); font-size: 0.8rem; padding: 16px; text-align: center; letter-spacing: 2px;">AI評価中...</div>' :
       this.createWordsHistoryHtml(data.words);
+
+    const rankLabel = rank === 1 ? '🥇 1位' : rank === 2 ? '🥈 2位' : rank === 3 ? '🥉 3位' : `${rank}位`;
+    const borderColor = isCurrentUser ? 'rgba(0, 234, 255, 0.5)' : 'rgba(0, 234, 255, 0.15)';
 
     cardWrapper.innerHTML = `
       <div class="col-md-8">
-        <div class="card ${isCurrentUser ? 'border-primary' : ''}">
-          <div class="card-header d-flex align-items-center justify-content-between">
-            <div class="d-flex align-items-center">
-              <span class="rank-badge fs-5 me-3">${rank}位</span>
-              <h4 class="mb-0">${escapeHtml(data.username)} ${isCurrentUser ? '(あなた)' : ''}</h4>
+        <div class="card" style="border-color: ${borderColor} !important;">
+          <div class="card-header d-flex align-items-center justify-content-between" style="padding: 12px 16px;">
+            <div class="d-flex align-items-center gap-3 flex-wrap">
+              <span class="rank-badge" style="font-size: 1rem; font-weight: bold; color: #c0d8e8; letter-spacing: 1px;">${rankLabel}</span>
+              <span style="font-size: 1rem; color: #00eaff; font-weight: bold; letter-spacing: 2px;">${escapeHtml(data.username)}</span>
+              ${isCurrentUser ? '<span style="font-size: 0.65rem; color: rgba(0,234,255,0.5); letter-spacing: 2px; border: 1px solid rgba(0,234,255,0.2); border-radius: 10px; padding: 1px 8px;">YOU</span>' : ''}
+              <span style="font-size: 0.7rem; color: rgba(150,180,200,0.6); letter-spacing: 1px; margin-left: auto;">
+                ${isInitial ? '' : `${data.words ? data.words.filter(w => w.score > 0).length : 0} words`}
+              </span>
             </div>
-            <span class="crown fs-2 d-none">👑</span>
+            <span class="crown d-none" style="font-size: 1.8rem;">👑</span>
           </div>
-          <div class="card-body text-center">
-            <div class="row score-breakdown">
+          <div class="card-body text-center" style="padding: 16px;">
+            <div class="row score-breakdown g-2">
               <div class="col score-item total-score">
-                <h3 class="display-5 fw-bold" data-score-type="total">${totalScore}</h3>
-                <small>総合スコア</small>
+                <div style="font-size: 2.2rem; font-weight: 900; font-family: 'Courier New', monospace;" data-score-type="total">${(totalScore ?? 0).toLocaleString()}</div>
+                <small>TOTAL</small>
               </div>
-              <div class="col score-item base-score">
-                <h5 data-score-type="base">${data.total_base_score}</h5>
+              <div class="col score-item base-score" style="border-left: 1px solid rgba(0,234,255,0.1);">
+                <div style="font-size: 1.1rem; font-weight: bold; font-family: 'Courier New', monospace;" data-score-type="base">${(data.total_base_score ?? 0).toLocaleString()}</div>
                 <small>基礎点</small>
               </div>
-              <div class="col score-item ai-score">
-                <h5 data-score-type="ai">${aiScore}</h5>
-                <small>AIボーナス</small>
+              <div class="col score-item ai-score" style="border-left: 1px solid rgba(0,234,255,0.1);">
+                <div style="font-size: 1.1rem; font-weight: bold; font-family: 'Courier New', monospace;" data-score-type="ai">${aiScore}</div>
+                <small>AI</small>
               </div>
-              <div class="col score-item chain-score">
-                <h5 data-score-type="chain">${chainBonusScore}</h5>
-                <small>連鎖ボーナス</small>
+              <div class="col score-item chain-score" style="border-left: 1px solid rgba(0,234,255,0.1);">
+                <div style="font-size: 1.1rem; font-weight: bold; font-family: 'Courier New', monospace;" data-score-type="chain">${chainBonusScore}</div>
+                <small>連鎖</small>
               </div>
             </div>
           </div>
-          <div class="card-footer">
+          <div class="card-footer" style="padding: 0;">
             <div class="accordion" id="accordion-${cardId}">
               <div class="accordion-item">
-                <h2 class="accordion-header">
+                <h2 class="accordion-header" style="margin: 0;">
                   <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-${cardId}" aria-expanded="false">
-                    単語履歴を見る
+                    ◈ 単語履歴を見る
                   </button>
                 </h2>
                 <div id="collapse-${cardId}" class="accordion-collapse collapse" data-bs-parent="#accordion-${cardId}">
-                  <div class="accordion-body" style="max-height: 300px; overflow-y: auto;">
+                  <div class="accordion-body" style="max-height: 320px; overflow-y: auto; padding: 8px 12px;">
                     ${wordsHistoryHtml}
                   </div>
                 </div>
@@ -347,34 +355,40 @@ export default class extends Controller {
   
   createWordsHistoryHtml(words) {
     if (!words || words.length === 0) {
-      return '<div class="text-muted p-3">単語の投稿がありませんでした。</div>';
+      return '<div style="color: rgba(100,150,180,0.5); font-size: 0.85rem; padding: 16px; text-align: center; letter-spacing: 2px;">単語の投稿がありませんでした</div>';
     }
-    return words.map(word => `
-      <div class="d-flex justify-content-between align-items-center mb-2 pb-2 border-bottom">
-        <div class="flex-grow-1 text-start">
-          <p class="fs-6 mb-0 fw-medium">${escapeHtml(word.body)}</p>
-          ${word.ai_evaluation_comment ? `
-            <div class="text-muted small mt-1 p-2 bg-light rounded">
-              <i class="bi bi-robot me-1"></i>
-              ${escapeHtml(word.ai_evaluation_comment)}
-            </div>
-          ` : ''}
-          ${word.chain_bonus_comment ? `
-            <div class="text-muted small mt-1 p-2 bg-success bg-opacity-10 rounded">
-              <i class="bi bi-link-45deg me-1"></i>
-              ${escapeHtml(word.chain_bonus_comment)}
-            </div>
-          ` : ''}
-        </div>
-        <div class="text-end ms-3" style="min-width: 140px;">
-          ${word.score > 0 ? `
-            <span class="badge bg-secondary rounded-pill">基礎: ${word.score}点</span>
-            <span class="badge bg-info rounded-pill">AI: ${word.ai_score ?? '...'}点</span>
-            ${word.chain_bonus_score !== null ? `<span class="badge bg-success rounded-pill mt-1">連鎖: ${word.chain_bonus_score}点</span>` : ''}
-          ` : `<span class="badge bg-light text-muted rounded-pill">開始単語</span>`}
+    return words.map(word => {
+      const isHighScore = word.ai_score > 5000;
+      const wordColor = isHighScore ? '#ffd700' : '#e0f0ff';
+      const wordGlow = isHighScore ? '0 0 8px rgba(255,215,0,0.6)' : 'none';
+      return `
+      <div style="padding: 8px 0; border-bottom: 1px solid rgba(0,234,255,0.06);">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 12px;">
+          <div style="flex: 1;">
+            <span style="color: ${wordColor}; font-size: 1.05rem; font-weight: bold; letter-spacing: 1px; text-shadow: ${wordGlow};">
+              ${isHighScore ? '⭐ ' : '▸ '}${escapeHtml(word.body)}
+            </span>
+            ${word.ai_evaluation_comment ? `
+              <div style="margin-top: 4px; padding: 6px 10px; background: rgba(0,150,200,0.08); border-left: 2px solid rgba(0,200,255,0.3); border-radius: 0 4px 4px 0; font-size: 0.75rem; color: rgba(150,200,230,0.8); line-height: 1.4;">
+                🤖 ${escapeHtml(word.ai_evaluation_comment)}
+              </div>
+            ` : ''}
+            ${word.chain_bonus_comment ? `
+              <div style="margin-top: 4px; padding: 6px 10px; background: rgba(0,200,100,0.08); border-left: 2px solid rgba(0,200,100,0.3); border-radius: 0 4px 4px 0; font-size: 0.75rem; color: rgba(100,220,150,0.8); line-height: 1.4;">
+                🔗 ${escapeHtml(word.chain_bonus_comment)}
+              </div>
+            ` : ''}
+          </div>
+          <div style="text-align: right; min-width: 120px; flex-shrink: 0;">
+            ${word.score > 0 ? `
+              <div style="font-size: 0.7rem; color: rgba(150,180,200,0.6); margin-bottom: 2px;">基礎 <span style="color: #c0d8e8;">${word.score}</span></div>
+              <div style="font-size: 0.7rem; color: rgba(0,200,255,0.6);">AI <span style="color: #00d8ff;">${word.ai_score ?? '...'}</span></div>
+              ${word.chain_bonus_score !== null ? `<div style="font-size: 0.7rem; color: rgba(0,200,100,0.6);">連鎖 <span style="color: #40c070;">${word.chain_bonus_score}</span></div>` : ''}
+            ` : `<span style="font-size: 0.7rem; color: rgba(100,130,150,0.5); letter-spacing: 1px;">開始単語</span>`}
+          </div>
         </div>
       </div>
-    `).join('');
+    `}).join('');
   }
 
   isCurrentUser(data) {

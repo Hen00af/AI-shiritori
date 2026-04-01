@@ -1,56 +1,112 @@
-<div class="container py-5">
-  
-  <div class="text-center mb-5">
-    <% if current_user %>
-      <%= button_to "ルームを作成", rooms_path, method: :post, class: 'game-btn' %>
-    <% else %>
-      <%= link_to "ルーム作成はログインが必要です", new_user_session_path, class: 'btn btn-warning' %>
-    <% end %>
-    <%= button_to "ソロモードで遊ぶ", solo_rooms_path, method: :post, class: 'game-btn' %>
-  </div>
+<div class="container py-4">
 
-  <div class="mb-5">
-    <h2 class="mb-3 text-center lobby-heading">ソロスコアランキング</h2>
-    
-    <div class="ranking-table-container">
-      <table class="futuristic-ranking">
-        <thead>
-          <tr>
-            <th>順位</th>
-            <th>ユーザー名</th>
-            <th>合計スコア</th>
-          </tr>
-        </thead>
-        <tbody>
-          <% @ranking.each_with_index do |row, i| %>
-            <tr>
-              <td><%= i + 1 %></td>
-              <td><%= row[:username] %></td>
-              <td><%= row[:score] %></td>
-            </tr>
-          <% end %>
-        </tbody>
-      </table>
+  <%# ヒーローセクション %>
+  <div class="lobby-hero">
+    <p class="lobby-tagline">日本語 高速単語バトル</p>
+    <div class="action-buttons">
+      <%= button_to solo_rooms_path, method: :post, class: 'btn-solo' do %>
+        ⚡ ソロモードで遊ぶ
+      <% end %>
+      <% if current_user %>
+        <%= button_to rooms_path, method: :post, class: 'btn-multi' do %>
+          👾 ルームを作成
+        <% end %>
+      <% else %>
+        <%= link_to new_user_session_path, class: 'btn-login-hint' do %>
+          🔒 マルチは要ログイン
+        <% end %>
+      <% end %>
     </div>
   </div>
 
-  <div>
-    <h2 class="mb-3 text-center lobby-heading">参加可能なルーム</h2>
+  <%# ルール説明（折りたたみ） %>
+  <div class="how-to-play mb-5">
+    <div class="how-to-play-title" onclick="this.nextElementSibling.classList.toggle('open'); this.textContent = this.nextElementSibling.classList.contains('open') ? '▲ HOW TO PLAY' : '▼ HOW TO PLAY'">
+      ▼ HOW TO PLAY
+    </div>
+    <div class="how-to-play-body">
+      <div class="rule-item">
+        <span class="rule-icon">⚡</span>
+        <span>制限時間30秒以内にできるだけ多くの<strong style="color: #00eaff;">ひらがな</strong>でしりとりをする</span>
+      </div>
+      <div class="rule-item">
+        <span class="rule-icon">🔤</span>
+        <span>前の単語の<strong style="color: #00eaff;">最後の文字</strong>から始まる言葉を入力（ローマ字入力可）</span>
+      </div>
+      <div class="rule-item">
+        <span class="rule-icon">💀</span>
+        <span><strong style="color: #ff6666;">「ん」で終わる</strong>単語を言ったらゲームオーバー</span>
+      </div>
+      <div class="rule-item">
+        <span class="rule-icon">🤖</span>
+        <span>AIが単語の<strong style="color: #00eaff;">独創性・ユーモア・専門性</strong>を評価してボーナスを付与</span>
+      </div>
+      <div class="rule-item">
+        <span class="rule-icon">🔗</span>
+        <span>単語の<strong style="color: #40c070;">テーマ連鎖</strong>でさらにボーナスゲット！</span>
+      </div>
+    </div>
+  </div>
 
-    <div data-controller="lobby">
-      <ul class="list-group" data-lobby-target="list">
+  <%# ランキング %>
+  <div class="mb-5">
+    <h2 class="mb-3 text-center lobby-heading">◈ SOLO RANKING</h2>
+    <div style="max-width: 560px; margin: 0 auto;">
+      <div class="ranking-table-container">
+        <table class="futuristic-ranking">
+          <thead>
+            <tr>
+              <th>RANK</th>
+              <th>PLAYER</th>
+              <th>SCORE</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% @ranking.each_with_index do |row, i| %>
+              <tr>
+                <td style="color: <%= i == 0 ? '#ffd700' : i == 1 ? '#c0c0c0' : i == 2 ? '#cd7f32' : 'inherit' %>; font-weight: <%= i < 3 ? 'bold' : 'normal' %>;">
+                  <%= i + 1 %>
+                </td>
+                <td><%= row[:username] %></td>
+                <td style="color: #00ffe7; font-weight: bold;"><%= number_with_delimiter(row[:score]) %></td>
+              </tr>
+            <% end %>
+            <% if @ranking.empty? %>
+              <tr>
+                <td colspan="3" class="text-center" style="color: rgba(100, 150, 180, 0.6); font-size: 0.85rem; letter-spacing: 2px; padding: 20px;">
+                  まだ記録がありません
+                </td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <%# ルームリスト %>
+  <div>
+    <h2 class="mb-3 text-center lobby-heading">◈ AVAILABLE ROOMS</h2>
+
+    <div data-controller="lobby" style="max-width: 640px; margin: 0 auto;">
+      <ul class="list-group" data-lobby-target="list" style="padding: 0;">
         <% if @rooms.any? %>
           <% @rooms.each do |room| %>
             <%= render 'room', room: room %>
           <% end %>
         <% end %>
       </ul>
-      
-      <%# メッセージ部分にも target を設定 %>
+
       <% if @rooms.empty? %>
-        <p id="no-rooms-message" class="text-center mt-3" data-lobby-target="message">参加可能なルームはありません。</p>
+        <p id="no-rooms-message" class="text-center mt-3" data-lobby-target="message"
+           style="color: rgba(100, 150, 180, 0.5); font-size: 0.85rem; letter-spacing: 2px;">
+          参加可能なルームはありません
+        </p>
       <% else %>
-        <p id="no-rooms-message" class="text-center mt-3 d-none" data-lobby-target="message">参加可能なルームはありません。</p>
+        <p id="no-rooms-message" class="text-center mt-3 d-none" data-lobby-target="message"
+           style="color: rgba(100, 150, 180, 0.5); font-size: 0.85rem; letter-spacing: 2px;">
+          参加可能なルームはありません
+        </p>
       <% end %>
     </div>
   </div>

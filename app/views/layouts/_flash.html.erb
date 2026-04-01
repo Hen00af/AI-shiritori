@@ -1,5 +1,9 @@
 <% type ||= "warning" %>
-<div class="alert alert-<%= type %> alert-dismissible fade show" role="alert" data-controller="removals">
-  <%= message %>
-  <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+<div class="alert alert-<%= type %> alert-dismissible fade show d-flex align-items-center gap-2"
+     role="alert"
+     style="font-size: 0.9rem; letter-spacing: 1px; border-radius: 8px;">
+  <span><%= type == 'warning' ? '⚠' : type == 'danger' ? '✕' : 'ℹ' %></span>
+  <span><%= message %></span>
+  <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert" aria-label="Close"
+          style="filter: invert(1); opacity: 0.6;"></button>
 </div>

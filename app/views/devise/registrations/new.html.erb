@@ -1,36 +1,51 @@
-<div class="all">
+<div class="container py-5" style="max-width: 440px; margin: 40px auto;">
+  <div class="card">
+    <div class="card-body p-4">
+      <div class="text-center mb-4">
+        <p class="game-label mb-1">NEW PLAYER</p>
+        <h2 style="letter-spacing: 4px; font-size: 1.4rem;">REGISTER</h2>
+      </div>
 
-  <h2>Sign up</h2>
+      <%= form_for(resource, as: resource_name, url: registration_path(resource_name)) do |f| %>
+        <%= render "devise/shared/error_messages", resource: resource %>
 
-  <%= form_for(resource, as: resource_name, url: registration_path(resource_name)) do |f| %>
-    <%= render "devise/shared/error_messages", resource: resource %>
+        <div class="mb-3">
+          <%= f.label :username, "USERNAME", class: "game-label d-block mb-1" %>
+          <%= f.text_field :username, placeholder: "プレイヤー名",
+              class: "form-control word-input" %>
+        </div>
 
-    <div class="field">
-      <%= f.text_field :username, placeholder: "ユーザー名", class: "input-field" %>
+        <div class="mb-3">
+          <%= f.label :email, "EMAIL", class: "game-label d-block mb-1" %>
+          <%= f.email_field :email, autofocus: true, autocomplete: "email",
+              class: "form-control word-input", placeholder: "your@email.com" %>
+        </div>
+
+        <div class="mb-3">
+          <%= f.label :password, "PASSWORD", class: "game-label d-block mb-1" %>
+          <% if @minimum_password_length %>
+            <span style="font-size: 0.7rem; color: rgba(0,200,220,0.4); letter-spacing: 1px;">
+              MIN <%= @minimum_password_length %> CHARS
+            </span>
+          <% end %>
+          <%= f.password_field :password, autocomplete: "new-password",
+              class: "form-control word-input mt-1", placeholder: "••••••••" %>
+        </div>
+
+        <div class="mb-3">
+          <%= f.label :password_confirmation, "CONFIRM PASSWORD", class: "game-label d-block mb-1" %>
+          <%= f.password_field :password_confirmation, autocomplete: "new-password",
+              class: "form-control word-input", placeholder: "••••••••" %>
+        </div>
+
+        <div class="d-grid mt-4">
+          <%= f.submit "→ CREATE ACCOUNT", class: "game-btn", style: "width: 100%; margin: 0;", data: { turbo: false } %>
+        </div>
+      <% end %>
     </div>
+  </div>
 
-    <div class="field">
-      <%= f.label :email %><br />
-      <%= f.email_field :email, autofocus: true, autocomplete: "email" %>
-    </div>
-
-    <div class="field">
-      <%= f.label :password %>
-      <% if @minimum_password_length %>
-      <em>(<%= @minimum_password_length %> characters minimum)</em>
-      <% end %><br />
-      <%= f.password_field :password, autocomplete: "new-password" %>
-    </div>
-
-    <div class="field">
-      <%= f.label :password_confirmation %><br />
-      <%= f.password_field :password_confirmation, autocomplete: "new-password" %>
-    </div>
-
-    <div class="actions">
-      <%= f.submit "サインアップ", class: "game-btn", data: { turbo: false } %>
-    </div>
-  <% end %>
-
-  <%= render "devise/shared/links" %>
+  <div class="text-center mt-3">
+    <%= render "devise/shared/links" %>
+  </div>
 </div>

@@ -1,8 +1,14 @@
-<li id="<%= dom_id(room) %>" class="list-group-item d-flex justify-content-between align-items-center">
+<li id="<%= dom_id(room) %>" class="list-group-item room-list-item d-flex justify-content-between align-items-center">
   <div>
-    ルーム #<%= room.id %>（作成者: <%= room.creator.username %>）
-    / 参加人数: <%= room.room_participants.count %> / <%= room.max_players %>
+    <span style="color: rgba(0,234,255,0.5); font-size: 0.75rem; letter-spacing: 2px;">ROOM</span>
+    <span style="color: #00eaff; font-weight: bold; margin-left: 4px;">#<%= room.id %></span>
+    <span style="color: rgba(150,180,200,0.7); font-size: 0.85rem; margin-left: 12px;">by <%= room.creator.username %></span>
+    <span style="color: rgba(0,255,231,0.5); font-size: 0.8rem; margin-left: 12px;">
+      <%= room.room_participants.count %>/<%= room.max_players %> players
+    </span>
   </div>
-  <%# Turboがフォームの送信を横取りしないように、formにdata-turbo="false"を指定する %>
-  <%= button_to "参加", join_room_path(room), method: :post, class: "game-btn", form: { "data-turbo": "false" } %>
+  <%= button_to "JOIN →", join_room_path(room), method: :post,
+      class: "game-btn",
+      style: "margin: 0; padding: 6px 16px; font-size: 0.85rem; letter-spacing: 2px;",
+      form: { "data-turbo": "false" } %>
 </li>

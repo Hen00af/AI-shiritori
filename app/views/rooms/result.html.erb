@@ -1,27 +1,27 @@
 <%# app/views/rooms/result.html.erb %>
 
 <div
-  class="container py-5 text-center"
+  class="container py-4"
   data-controller="result"
   data-result-room-id-value="<%= @room.id %>"
   data-result-current-user-id-value="<%= current_user&.id %>"
   data-result-current-guest-id-value="<%= guest_user? ? current_guest_id : '' %>"
-  <%# h()ヘルパーでエスケープ処理を追加して、安全にJSONデータを埋め込む %>
   data-result-initial-value="<%= h(@initial_results_data) %>"
 >
-  <h1 class="mb-4">ゲーム結果</h1>
+  <div class="text-center mb-4">
+    <p class="game-label">GAME RESULT</p>
+    <h1 style="letter-spacing: 6px; font-size: 2rem;">FINAL SCORE</h1>
+  </div>
 
-  <div data-result-target="resultsWrapper">
-    <div id="initial-loading-message" class="alert alert-info mb-4">
-      AI判定中...
-      <div class="spinner-border spinner-border-sm ms-2" role="status">
+  <div data-result-target="resultsWrapper" style="max-width: 720px; margin: 0 auto;">
+    <div id="initial-loading-message" class="alert alert-info mb-4" style="text-align: center;">
+      <div style="letter-spacing: 2px; font-size: 0.85rem;">AI EVALUATING</div>
+      <div class="spinner-border spinner-border-sm ms-2 mt-2" role="status">
         <span class="visually-hidden">Loading...</span>
       </div>
     </div>
-    
-    <div class="ranking-container" data-result-target="rankingContainer">
-      <%# JavaScriptが、まず上記の初期データを読み込んでここに初回表示を行います %>
-    </div>
+
+    <div class="ranking-container" data-result-target="rankingContainer"></div>
   </div>
 
   <div class="mt-4 share-container" id="share-container" style="display: none;">
@@ -34,7 +34,7 @@
   </div>
 
   <div class="mt-4 d-flex justify-content-center gap-3 flex-wrap">
-    <%= button_to "🔄 もう一回！", solo_rooms_path, method: :post, class: 'game-btn rematch-btn' %>
-    <%= button_to "トップに戻る", authenticated_root_path, method: :get, class: 'game-btn' %>
+    <%= button_to "⚡ もう一回！", solo_rooms_path, method: :post, class: 'game-btn rematch-btn' %>
+    <%= button_to "← LOBBY", authenticated_root_path, method: :get, class: 'game-btn' %>
   </div>
 </div>

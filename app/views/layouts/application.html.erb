@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title><%= content_for(:title) || "Camp Ten To Sen" %></title>
+    <title><%= content_for(:title) || "WORD CHASER" %></title>
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="mobile-web-app-capable" content="yes">
@@ -31,49 +31,28 @@
 
             <div class="music-controls">
               <% if action_name == "index" %>
-                <button class="music-btn" onclick="toggleImage()">
-                  <img id="music-icon"
-                    src="<%= asset_path('audiobtn_on.png') %>"
-                    alt="BGM"
-                    style="width:32px;height:32px;">
+                <button class="music-btn" data-action="click->bgm#toggle" data-bgm-target="toggleButton" title="BGM ON/OFF"
+                        style="font-size: 18px; padding: 6px 10px;">
+                  🔊
                 </button>
-
-                <script>
-                  // Railsヘルパーを使って、JavaScript変数に正しいアセットパスを格納
-                  const onImagePath = "<%= asset_path('audiobtn_on.png') %>";
-                  const offImagePath = "<%= asset_path('audiobtn_off.png') %>";
-                  
-                  function toggleImage() {
-                    const imgElement = document.getElementById('music-icon');
-                    
-                    // 現在の画像のsrcと正しいパスを比較して切り替える
-                    if (imgElement.src.includes(onImagePath)) {
-                      imgElement.src = offImagePath;
-                    } else {
-                      imgElement.src = onImagePath;
-                    }
-                  }
-                </script>
-
-                <button data-action="click->bgm#next" class="music-btn">
-                  <img 
-                    src="<%= asset_path('change.png') %>" 
-                    alt="次の曲" 
-                    style="width:32px;height:32px;">
+                <button data-action="click->bgm#next" class="music-btn" title="次の曲"
+                        style="font-size: 18px; padding: 6px 10px;">
+                  ⏭
                 </button>
               <% end %>
             </div>
 
             <div class="user-panel">
               <% if current_user %>
-                <span class="username neon-blue">
+                <span class="username neon-blue" style="font-size: 14px;">
                   👾 <%= current_user.username %>
                 </span>
                 <%= button_to destroy_user_session_path, method: :delete, class: "logout-btn" do %>
-                  <i class="fas fa-sign-out-alt"></i>ログアウト
+                  LOGOUT
                 <% end %>
               <% else %>
-                <span class="username guest">GUEST</span>
+                <span class="username guest">GUEST MODE</span>
+                <%= link_to "LOGIN", new_user_session_path, style: "color: rgba(0,234,255,0.6); font-size: 12px; letter-spacing: 2px; text-decoration: none;" %>
               <% end %>
             </div>
 
@@ -84,29 +63,29 @@
         <% end %>
       </div>
     </div>
+
     <div class="titletext">
-        <h3 class="titletext_sub2"> 高速しりとりバトル </h3>
-        <h1 class="titletext_sub"> WORD CHASER </h1>
+      <h3 class="titletext_sub2">高速しりとりバトル</h3>
+      <h1 class="titletext_sub">WORD CHASER</h1>
     </div>
+
+    <% if flash[:notice] || flash[:alert] %>
+      <div style="position: fixed; top: 74px; left: 50%; transform: translateX(-50%); z-index: 500; min-width: 300px; max-width: 90vw;">
+        <% if flash[:notice] %>
+          <div class="alert alert-success alert-dismissible fade show" role="alert" style="font-size: 0.85rem; letter-spacing: 1px; text-align: center;">
+            <%= flash[:notice] %>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" style="filter: invert(1); opacity: 0.6;"></button>
+          </div>
+        <% end %>
+        <% if flash[:alert] %>
+          <div class="alert alert-danger alert-dismissible fade show" role="alert" style="font-size: 0.85rem; letter-spacing: 1px; text-align: center;">
+            <%= flash[:alert] %>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" style="filter: invert(1); opacity: 0.6;"></button>
+          </div>
+        <% end %>
+      </div>
+    <% end %>
 
     <%= yield %>
   </body>
 </html>
-
-<% if controller_name == "rooms" && action_name == "index" %>
-<style>
-/* レスポンシブ対応 */
-@media (max-width: 768px) {
-  /* モバイルでは縦並びに */
-  .header-menu-container {
-    flex-direction: column;
-    gap: 10px;
-    align-items: flex-start;
-  }
-
-  .titlecontainer .titlemenubox .greeting {
-    align-self: flex-end;
-  }
-}
-</style>
-<% end %>

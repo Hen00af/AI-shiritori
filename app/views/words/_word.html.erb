@@ -1,1 +1,7 @@
-<p class="mb-1 fs-5"><%= word.body %></p>
+<div class="d-flex align-items-center gap-2 py-1" style="border-bottom: 1px solid rgba(0,234,255,0.06); animation: page-fade-in 0.3s ease-out;">
+  <span style="color: rgba(0,200,220,0.4); font-size: 0.7rem;">▸</span>
+  <span style="color: #e0f0ff; letter-spacing: 1px; font-size: 1rem; font-weight: 500;"><%= word.body %></span>
+  <% if word.score > 0 %>
+    <span style="margin-left: auto; font-family: 'Courier New', monospace; font-size: 0.75rem; color: rgba(0,255,180,0.7); font-weight: bold;">+<%= word.score %></span>
+  <% end %>
+</div>
