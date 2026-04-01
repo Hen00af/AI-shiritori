@@ -30,6 +30,7 @@ class WordsController < ApplicationController
                                  event: 'word_created',
                                  word_html: word_html,
                                  participant_id: @word_record.room_participant_id,
+                                 last_char: new_word.last,
                                })
 
       head :no_content
@@ -48,6 +49,7 @@ class WordsController < ApplicationController
                                  event: 'word_created',
                                  word_html: word_html,
                                  participant_id: word_record.room_participant_id,
+                                 last_char: new_word.last,
                                })
 
       RoomChannel.broadcast_to(room, {

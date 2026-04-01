@@ -96,6 +96,8 @@ export default class extends Controller {
         winnerCard.querySelector('.crown').classList.remove('d-none')
       }
     }
+
+    this.enableShare(finalResults);
   }
 
   async initializeRankingForAnimation(initialResults) {
@@ -229,13 +231,43 @@ export default class extends Controller {
         x: (rect.left + rect.right) / 2 / window.innerWidth,
         y: (rect.top + rect.bottom) / 2 / window.innerHeight
       };
-      
+
       confetti({ particleCount: 150, spread: 90, origin: { ...origin, y: origin.y - 0.1 } });
       await sleep(200);
       confetti({ particleCount: 200, spread: 120, origin: origin });
       await sleep(200);
       confetti({ particleCount: 150, spread: 90, origin: { ...origin, y: origin.y + 0.1 } });
     }
+
+    // シェア機能を有効化
+    this.enableShare(rankedResults);
+  }
+
+  enableShare(rankedResults) {
+    const myResult = rankedResults.find(r => this.isCurrentUser(r));
+    if (!myResult) return;
+
+    const wordCount = myResult.words ? myResult.words.filter(w => w.score > 0).length : 0;
+    const totalScore = myResult.total_score || 0;
+
+    // スコアをバー表示に変換（最大10ブロック）
+    const maxScore = rankedResults[0]?.total_score || totalScore || 1;
+    const blocks = Math.round((totalScore / maxScore) * 10);
+    const bar = '🟦'.repeat(blocks) + '⬛'.repeat(10 - blocks);
+
+    const shareText = [
+      `🎮 WORD CHASER 高速しりとりバトル`,
+      ``,
+      `📝 ${wordCount}語 | 🏆 ${totalScore.toLocaleString()}点`,
+      bar,
+      ``,
+      `#WordChaser #しりとり`
+    ].join('\n');
+
+    window._shareText = shareText;
+
+    const container = document.getElementById('share-container');
+    if (container) container.style.display = '';
   }
 
   createRankingCard(cardId, data, rank, isInitial = false) {

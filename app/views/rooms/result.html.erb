@@ -24,7 +24,17 @@
     </div>
   </div>
 
-  <div class="mt-4">
+  <div class="mt-4 share-container" id="share-container" style="display: none;">
+    <button class="share-btn" id="share-copy-btn" onclick="copyShareText()">
+      📋 結果をコピー
+    </button>
+    <button class="share-btn" id="share-x-btn" onclick="shareToX()">
+      𝕏 でシェア
+    </button>
+  </div>
+
+  <div class="mt-4 d-flex justify-content-center gap-3 flex-wrap">
+    <%= button_to "🔄 もう一回！", solo_rooms_path, method: :post, class: 'game-btn rematch-btn' %>
     <%= button_to "トップに戻る", authenticated_root_path, method: :get, class: 'game-btn' %>
   </div>
 </div>

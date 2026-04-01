@@ -26,10 +26,36 @@
     </div>
   </div>
 
-  <div class="card text-center mb-4">
-    <div class="card-body">
-      <h2 class="card-title">残り時間</h2>
-      <h1 class="red" data-shiritori-target="timer">30</h1>
+  <div class="d-flex justify-content-center gap-3 mb-4">
+    <div class="card text-center flex-grow-1">
+      <div class="card-body">
+        <h2 class="card-title">残り時間</h2>
+        <h1 class="red" data-shiritori-target="timer">30</h1>
+      </div>
+    </div>
+    <div class="card text-center" style="min-width: 120px;">
+      <div class="card-body">
+        <h2 class="card-title" style="font-size: 1rem;">単語数</h2>
+        <div class="word-counter">
+          <span class="count" data-shiritori-target="wordCount"><%= @words.count { |w| w.score > 0 } %></span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="d-flex justify-content-center align-items-center gap-4 mb-3">
+    <div class="text-center">
+      <small class="text-muted" style="text-shadow: none;">次の文字</small>
+      <div class="next-char-hint" data-shiritori-target="nextChar">
+        <%= @words.last&.body&.last || 'り' %>
+      </div>
+    </div>
+    <div class="text-center">
+      <small class="text-muted" style="text-shadow: none;">チャレンジ</small>
+      <div class="char-limit-badge" data-shiritori-target="charChallenge">
+        ---
+      </div>
+      <div class="challenge-result d-none" data-shiritori-target="challengeResult"></div>
     </div>
   </div>
 

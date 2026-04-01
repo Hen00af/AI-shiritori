@@ -4,7 +4,7 @@ import * as wanakana from "wanakana"
 import consumer from "../channels/consumer"
 
 export default class extends Controller {
-  static targets = ["timer", "input", "form"]
+  static targets = ["timer", "input", "form", "wordCount", "nextChar"]
   static values = {
     roomId: Number,
     startedAt: String,
@@ -70,6 +70,8 @@ export default class extends Controller {
       case 'word_created':
         if (data.participant_id === this.currentParticipantIdValue) {
           this.appendWord(data.word_html);
+          this.incrementWordCount();
+          this.updateNextChar(data.last_char);
         }
         break;
       case 'player_game_over':
@@ -86,6 +88,30 @@ export default class extends Controller {
     if (wordHistory) {
       wordHistory.insertAdjacentHTML('beforeend', html)
       wordHistory.scrollTop = wordHistory.scrollHeight
+    }
+  }
+
+  updateNextChar(char) {
+    if (this.hasNextCharTarget && char) {
+      this.nextCharTarget.textContent = char;
+      this.nextCharTarget.style.transform = 'scale(1.3)';
+      this.nextCharTarget.style.transition = 'transform 0.3s ease';
+      setTimeout(() => {
+        this.nextCharTarget.style.transform = 'scale(1)';
+      }, 300);
+    }
+  }
+
+  incrementWordCount() {
+    if (this.hasWordCountTarget) {
+      const current = parseInt(this.wordCountTarget.textContent) || 0;
+      this.wordCountTarget.textContent = current + 1;
+      // カウントアップアニメーション
+      this.wordCountTarget.style.transform = 'scale(1.4)';
+      this.wordCountTarget.style.transition = 'transform 0.2s ease';
+      setTimeout(() => {
+        this.wordCountTarget.style.transform = 'scale(1)';
+      }, 200);
     }
   }
 
@@ -170,6 +196,16 @@ export default class extends Controller {
 
       if (timeLeft > 0) {
         this.timerTarget.textContent = timeLeft;
+        // 緊迫演出: 残り時間に応じて色とアニメーション変更
+        if (timeLeft <= 5) {
+          this.timerTarget.classList.add('timer-critical');
+          this.timerTarget.classList.remove('timer-warning');
+        } else if (timeLeft <= 10) {
+          this.timerTarget.classList.add('timer-warning');
+          this.timerTarget.classList.remove('timer-critical');
+        } else {
+          this.timerTarget.classList.remove('timer-warning', 'timer-critical');
+        }
       } else {
         this.timerTarget.textContent = 0;
         this.endGame(false);
