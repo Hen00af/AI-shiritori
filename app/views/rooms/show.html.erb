@@ -32,10 +32,10 @@
     <%# ステータスバー: タイマー / 単語数 / コンボ %>
     <div class="d-flex justify-content-center gap-3 mb-4">
       <%# タイマー %>
-      <div class="card text-center flex-grow-1">
+      <div class="card text-center flex-grow-1 time-card">
         <div class="card-body py-3 px-2">
           <p class="game-label mb-1">TIME</p>
-          <div class="red mb-0" style="font-size: 2.8rem; font-weight: 900; line-height: 1; font-family: 'Courier New', monospace;" data-shiritori-target="timer">30</div>
+          <div class="red mb-0 timer-digit" data-shiritori-target="timer">30</div>
           <div class="timer-bar-container mt-2">
             <div class="timer-bar" data-shiritori-target="timerBar"></div>
           </div>
@@ -43,15 +43,15 @@
       </div>
 
       <%# 単語数 %>
-      <div class="card text-center" style="min-width: 90px;">
+      <div class="card text-center words-card">
         <div class="card-body py-3 px-2">
           <p class="game-label mb-1">WORDS</p>
-          <div style="font-size: 2rem; font-weight: 900; color: #fff; font-family: 'Courier New', monospace; text-shadow: 0 0 8px rgba(0,234,255,0.5);" data-shiritori-target="wordCount"><%= @words.count { |w| w.score > 0 } %></div>
+          <div class="stat-number" data-shiritori-target="wordCount"><%= @words.count { |w| w.score > 0 } %></div>
         </div>
       </div>
 
       <%# コンボ %>
-      <div class="card text-center" style="min-width: 90px;">
+      <div class="card text-center combo-card">
         <div class="card-body py-3 px-2 combo-display" data-shiritori-target="comboDisplay">
           <p class="game-label mb-1">COMBO</p>
           <span class="combo-fire">🔥</span>
@@ -65,11 +65,11 @@
     <div class="d-flex justify-content-center align-items-center gap-3 mb-4 flex-wrap">
       <div class="text-center">
         <p class="game-label">LAST WORD</p>
-        <div style="min-width: 100px; padding: 8px 16px; background: rgba(0,0,0,0.4); border: 1px solid rgba(0,234,255,0.15); border-radius: 10px; color: rgba(200,230,255,0.7); font-size: 1rem; letter-spacing: 2px;" data-shiritori-target="lastWord">
+        <div class="last-word-display" data-shiritori-target="lastWord">
           <%= @words.last&.body || '---' %>
         </div>
       </div>
-      <div class="text-center" style="font-size: 1.2rem; color: rgba(0,234,255,0.3); padding-top: 20px;">→</div>
+      <div class="stat-arrow">→</div>
       <div class="text-center">
         <p class="game-label">NEXT CHAR</p>
         <div class="next-char-hint" data-shiritori-target="nextChar">
