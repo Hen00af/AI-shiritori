@@ -4,7 +4,7 @@ import * as wanakana from "wanakana"
 import consumer from "../channels/consumer"
 
 export default class extends Controller {
-  static targets = ["timer", "timerBar", "input", "form", "wordCount", "nextChar", "comboDisplay", "comboCount", "lastWord", "scorePreview"]
+  static targets = ["timer", "timerBar", "input", "form", "wordCount", "nextChar", "comboDisplay", "comboCount", "lastWord", "scorePreview", "scoreDisplay"]
   static values = {
     roomId: Number,
     startedAt: String,
@@ -15,6 +15,9 @@ export default class extends Controller {
 
   connect() {
     this.comboStreak = 0
+    this.runningScore = this.hasScoreDisplayTarget
+      ? (parseInt(this.scoreDisplayTarget.textContent.replace(/,/g, '')) || 0)
+      : 0
     this.setupCountdown()
 
     this.subscription = consumer.subscriptions.create(
@@ -27,6 +30,7 @@ export default class extends Controller {
 
   disconnect() {
     clearInterval(this.timerInterval)
+    clearTimeout(this.flashClearTimer)
     this.subscription.unsubscribe()
   }
 
@@ -45,8 +49,15 @@ export default class extends Controller {
       if (response.ok) return;
       response.text().then(html => {
         Turbo.renderStreamMessage(html);
-        // エラー時はコンボリセット
-        this.resetCombo()
+        this.resetCombo();
+        this.showErrorFlash();
+        requestAnimationFrame(() => this.shakeInput());
+        // エラーメッセージを2.5秒後に自動クリア
+        clearTimeout(this.flashClearTimer);
+        this.flashClearTimer = setTimeout(() => {
+          const flashMessages = document.getElementById('flash-messages');
+          if (flashMessages) flashMessages.innerHTML = '';
+        }, 2500);
       });
     }).catch(error => console.error('Error submitting form:', error));
 
@@ -68,6 +79,7 @@ export default class extends Controller {
           this.updateNextChar(data.last_char);
           this.incrementCombo();
           this.showSubmitFlash();
+          if (data.score) this.addRunningScore(data.score);
         }
         break;
       case 'player_game_over':
@@ -117,13 +129,33 @@ export default class extends Controller {
   incrementWordCount() {
     if (this.hasWordCountTarget) {
       const current = parseInt(this.wordCountTarget.textContent) || 0;
-      this.wordCountTarget.textContent = current + 1;
+      const newCount = current + 1;
+      this.wordCountTarget.textContent = newCount;
       this.wordCountTarget.style.transform = 'scale(1.4)';
       this.wordCountTarget.style.transition = 'transform 0.2s ease';
       setTimeout(() => {
         this.wordCountTarget.style.transform = 'scale(1)';
       }, 200);
+      if (newCount > 0 && newCount % 5 === 0) {
+        setTimeout(() => this.showMilestoneFlash(newCount), 300);
+      }
     }
+  }
+
+  showMilestoneFlash(count) {
+    const flash = document.getElementById('submit-flash');
+    if (!flash) return;
+    const labels = { 5: '🎯 5 WORDS!', 10: '🔥 10 WORDS!!', 15: '⚡ 15 WORDS!!!', 20: '👑 20 WORDS!!!!' };
+    flash.textContent = labels[count] || `🎯 ${count} WORDS!`;
+    flash.style.color = '#ffd700';
+    flash.style.textShadow = '0 0 20px #ffd700, 0 0 40px #ffd700';
+    flash.classList.remove('show');
+    void flash.offsetWidth;
+    flash.classList.add('show');
+    setTimeout(() => {
+      flash.style.color = '';
+      flash.style.textShadow = '';
+    }, 900);
   }
 
   incrementCombo() {
@@ -152,14 +184,48 @@ export default class extends Controller {
     }
   }
 
+  addRunningScore(amount) {
+    this.runningScore += amount
+    if (this.hasScoreDisplayTarget) {
+      this.scoreDisplayTarget.textContent = this.runningScore.toLocaleString()
+      this.scoreDisplayTarget.classList.remove('score-pop')
+      void this.scoreDisplayTarget.offsetWidth
+      this.scoreDisplayTarget.classList.add('score-pop')
+    }
+  }
+
+  shakeInput() {
+    if (!this.hasInputTarget) return
+    this.inputTarget.classList.remove('shake')
+    void this.inputTarget.offsetWidth
+    this.inputTarget.classList.add('shake')
+  }
+
   showSubmitFlash() {
     const flash = document.getElementById('submit-flash')
     if (!flash) return
     const texts = ['NICE!', 'GOOD!', '連鎖!', 'OK!', 'YES!']
     flash.textContent = this.comboStreak >= 5 ? '🔥 COMBO!' : texts[Math.floor(Math.random() * texts.length)]
+    flash.style.color = ''
+    flash.style.textShadow = ''
     flash.classList.remove('show')
     void flash.offsetWidth
     flash.classList.add('show')
+  }
+
+  showErrorFlash() {
+    const flash = document.getElementById('submit-flash')
+    if (!flash) return
+    flash.textContent = '✕ NG!'
+    flash.style.color = '#ff4444'
+    flash.style.textShadow = '0 0 20px #ff4444'
+    flash.classList.remove('show')
+    void flash.offsetWidth
+    flash.classList.add('show')
+    setTimeout(() => {
+      flash.style.color = ''
+      flash.style.textShadow = ''
+    }, 700)
   }
 
   previewScore() {
@@ -314,6 +380,9 @@ export default class extends Controller {
         void flash.offsetWidth
         flash.classList.add('show')
       }
+      // 画面シェイク
+      document.documentElement.classList.add('screen-shake')
+      setTimeout(() => document.documentElement.classList.remove('screen-shake'), 600)
     }
 
     setTimeout(() => {

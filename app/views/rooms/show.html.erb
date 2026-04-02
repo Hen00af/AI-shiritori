@@ -7,7 +7,7 @@
   data-shiritori-started-at-value="<%= @room.started_at&.iso8601 %>"
   data-shiritori-current-user-id-value="<%= current_user&.id %>"
   data-shiritori-current-guest-id-value="<%= guest_user? ? current_guest_id : '' %>"
-  data-shiritori-current-participant-id-value="<%= @words.first&.room_participant_id %>"
+  data-shiritori-current-participant-id-value="<%= @current_participant&.id %>"
 >
   <%# カウントダウン %>
   <div id="countdown-area">
@@ -77,9 +77,8 @@
         </div>
       </div>
       <div class="text-center">
-        <p class="game-label">CHALLENGE</p>
-        <div class="char-limit-badge" data-shiritori-target="charChallenge">---</div>
-        <div class="challenge-result d-none" data-shiritori-target="challengeResult"></div>
+        <p class="game-label">SCORE</p>
+        <div class="running-score" data-shiritori-target="scoreDisplay"><%= @words.sum { |w| w.score > 0 ? w.score : 0 } %></div>
       </div>
     </div>
 

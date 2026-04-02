@@ -100,15 +100,44 @@ export default class extends Controller {
     this.enableShare(finalResults);
   }
 
+  startLoadingCycle(element) {
+    const messages = [
+      'WORDS ANALYZED...',
+      'COMPUTING SCORES...',
+      'AI EVALUATING...',
+      'RANKING PLAYERS...',
+      'CHECKING CHAINS...',
+    ];
+    let idx = 0;
+    const textEl = element.querySelector('.loading-text');
+    if (!textEl) return;
+    this.loadingCycle = setInterval(() => {
+      idx = (idx + 1) % messages.length;
+      textEl.style.opacity = '0';
+      setTimeout(() => {
+        textEl.textContent = messages[idx];
+        textEl.style.opacity = '1';
+      }, 150);
+    }, 900);
+  }
+
+  stopLoadingCycle() {
+    if (this.loadingCycle) {
+      clearInterval(this.loadingCycle);
+      this.loadingCycle = null;
+    }
+  }
+
   async initializeRankingForAnimation(initialResults) {
     const loadingMessage = document.getElementById('initial-loading-message');
     if (loadingMessage) {
       loadingMessage.innerHTML = `
-        最終結果集計中...
-        <div class="spinner-border spinner-border-sm ms-2" role="status">
+        <div class="loading-text" style="letter-spacing: 2px; font-size: 0.85rem; transition: opacity 0.15s ease;">WORDS ANALYZED...</div>
+        <div class="spinner-border spinner-border-sm ms-2 mt-2" role="status">
           <span class="visually-hidden">Loading...</span>
         </div>
       `;
+      this.startLoadingCycle(loadingMessage);
     }
 
     this.rankingContainerTarget.innerHTML = '';
@@ -127,6 +156,7 @@ export default class extends Controller {
   }
 
   async startFinalAnimation(finalResults) {
+    this.stopLoadingCycle();
     const loadingMessage = document.getElementById('initial-loading-message');
     if (loadingMessage) loadingMessage.remove();
 
@@ -256,14 +286,22 @@ export default class extends Controller {
     const blocks = Math.round((totalScore / maxScore) * 10);
     const bar = '🟦'.repeat(blocks) + '⬛'.repeat(10 - blocks);
 
+    const validWords = myResult.words ? myResult.words.filter(w => w.score > 0) : [];
+    const wordChain = validWords.slice(0, 5).map(w => w.body).join('→');
+    const chainSuffix = validWords.length > 5 ? '...' : '';
+    const rankLabel = rankedResults.length > 1
+      ? `${rankedResults.findIndex(r => this.isCurrentUser(r)) + 1}位/${rankedResults.length}人`
+      : null;
+
     const shareText = [
       `🎮 WORD CHASER 高速しりとりバトル`,
       ``,
-      `📝 ${wordCount}語 | 🏆 ${totalScore.toLocaleString()}点`,
+      `📝 ${wordCount}語 | 🏆 ${totalScore.toLocaleString()}点${rankLabel ? ` | ${rankLabel}` : ''}`,
       bar,
+      wordChain ? `${wordChain}${chainSuffix}` : '',
       ``,
       `#WordChaser #しりとり`
-    ].join('\n');
+    ].filter(line => line !== null).join('\n');
 
     window._shareText = shareText;
 
@@ -402,6 +440,7 @@ export default class extends Controller {
   }
 
   disconnect() {
+    this.stopLoadingCycle();
     if (this.subscription) {
       this.subscription.unsubscribe();
     }

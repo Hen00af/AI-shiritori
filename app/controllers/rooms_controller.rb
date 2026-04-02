@@ -47,6 +47,7 @@ class RoomsController < ApplicationController
       end
     end
     @ranking = user_max_scores.values.sort_by { |h| -h[:score] }.first(5)
+    @my_best_score = current_user ? user_max_scores.dig(current_user.id, :score) : nil
   end
 
   def show

@@ -19,6 +19,15 @@
     </div>
   </div>
 
+  <%# 個人ベストスコア（ログイン時） %>
+  <% if current_user && @my_best_score %>
+    <div class="personal-best-banner">
+      <span class="personal-best-label">YOUR BEST</span>
+      <span class="personal-best-score"><%= number_with_delimiter(@my_best_score) %></span>
+      <span class="personal-best-label">pts</span>
+    </div>
+  <% end %>
+
   <%# ルール説明（折りたたみ） %>
   <div class="how-to-play mb-5">
     <div class="how-to-play-title" onclick="this.nextElementSibling.classList.toggle('open'); this.textContent = this.nextElementSibling.classList.contains('open') ? '▲ HOW TO PLAY' : '▼ HOW TO PLAY'">
